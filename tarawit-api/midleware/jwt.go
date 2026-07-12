@@ -1,0 +1,104 @@
+package middlewares
+
+import (
+	"strings"
+	"tarawitApi/config"
+	"time"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
+)
+
+func JWTMiddleware(c *fiber.Ctx) error {
+	authHeader := c.Get("Authorization")
+
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		return c.Status(401).SendString("Invalid token nok")
+	}
+
+	tokenStr := parts[1]
+
+	// 3. Parse + Verify token
+	token, err := jwt.Parse(
+		tokenStr,
+		func(t *jwt.Token) (interface{}, error) {
+			// 3.1 เช็ค algorithm
+			if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
+				return nil, fiber.ErrUnauthorized
+			}
+			// 3.2 ใช้ Public key
+			return config.Cfg.JWTPubKey, nil
+		},
+	)
+
+	// 4. token ไม่ valid หรือ error (รวมหมดอายุ)
+	if err != nil || !token.Valid {
+		return fiber.ErrUnauthorized
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return c.Next()
+	}
+	c.Locals("username", claims["username"])
+	// ✅ ผ่าน = token ถูก + ยังไม่หมดอายุ
+	return c.Next()
+}
+
+// func OptionalJWT() fiber.Handler {
+// 	return func(c *fiber.Ctx) error {
+// 		auth := c.Get("Authorization")
+
+// 		// ไม่มี token → guest
+// 		if auth == "" {
+// 			return c.Next()
+// 		}
+
+// 		tokenStr := strings.TrimPrefix(auth, "Bearer ")
+
+// 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+// 			if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
+// 				return nil, errors.New("unexpected signing method")
+// 			}
+// 			return config.Cfg.JWTPubKey, nil
+// 		})
+
+// 		if err != nil || !token.Valid {
+// 			// token พัง → ถือเป็น guest (ไม่ throw)
+// 			return c.Next()
+// 		}
+
+// 		claims, ok := token.Claims.(jwt.MapClaims)
+// 		if !ok {
+// 			return c.Next()
+// 		}
+
+// 		// 🔑 set context
+// 		c.Locals("user_id", claims["sub"])
+// 		c.Locals("role", claims["role"])
+
+// 		return c.Next()
+// 	}
+// }
+
+func GenerateJWT(
+	cfg *config.Config,
+	id int64,
+	username string,
+	roles []string,
+	permissions []string,
+) (string, error) {
+	claims := jwt.MapClaims{
+	"sub": id,
+	"username": username,
+	"roles": roles,
+	"permissions": permissions,
+	"exp": time.Now().Add(
+		time.Hour * 24,
+	).Unix(),
+}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	return token.SignedString(cfg.JWTPrivKey)
+}
