@@ -14,7 +14,7 @@ RUN go build -o server main.go
 FROM alpine:latest
 
 WORKDIR /app
-COPY .env .env
+# COPY .env .env
 COPY keys /run/keys
 COPY --from=builder /app/server .
 # Copy .env เข้า container
