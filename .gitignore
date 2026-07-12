@@ -1,6 +1,7 @@
 cat <<EOF > .gitignore
 # env
 .env
+docker-compose.yml
 .env.*
 !.env.example
 
