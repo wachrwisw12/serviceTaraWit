@@ -45,3 +45,21 @@ type QuestionScoreResponses struct {
 	Label string `json:"label"`
 	SortOrder int `json:"sort_order"`
 }
+
+// internal/model/evaluation_instance.go
+
+
+type EvaluationInstance struct {
+    ID           int64      `db:"id" json:"id"`
+    TemplateID   int64      `db:"template_id" json:"template_id"`
+    Name         string     `db:"name" json:"name"`
+    TargetType   string     `db:"target_type" json:"target_type"`
+    AcademicYear int        `db:"academic_year" json:"academic_year"`
+    Status       string     `db:"status" json:"status"`
+    StartDate    time.Time  `db:"start_date" json:"start_date"`
+    EndDate      time.Time  `db:"end_date" json:"end_date"`
+    CreatedBy    int64      `db:"created_by" json:"created_by"`
+    CreatedAt    time.Time  `db:"created_at" json:"created_at"`
+    UpdatedAt    time.Time  `db:"updated_at" json:"updated_at"`
+    DeletedAt    *time.Time `db:"deleted_at" json:"deleted_at,omitempty"`
+}

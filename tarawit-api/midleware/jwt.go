@@ -41,7 +41,11 @@ func JWTMiddleware(c *fiber.Ctx) error {
 	if !ok {
 		return c.Next()
 	}
-	c.Locals("username", claims["username"])
+	// เก็บข้อมูลไว้ใช้ใน Handler
+c.Locals("user_id", int64(claims["sub"].(float64)))
+c.Locals("username", claims["username"])
+c.Locals("roles", claims["roles"])
+c.Locals("permissions", claims["permissions"])
 	// ✅ ผ่าน = token ถูก + ยังไม่หมดอายุ
 	return c.Next()
 }
