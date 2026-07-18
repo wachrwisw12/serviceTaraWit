@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"errors"
 	"strings"
 	"tarawitApi/config"
 	"time"
@@ -87,22 +88,30 @@ c.Locals("permissions", claims["permissions"])
 // }
 
 func GenerateJWT(
-	cfg *config.Config,
-	id int64,
-	username string,
-	roles []string,
-	permissions []string,
+    cfg *config.Config,
+    id int64,
+    username string,
+    roles []string,
+    permissions []string,
 ) (string, error) {
-	claims := jwt.MapClaims{
-	"sub": id,
-	"username": username,
-	"roles": roles,
-	"permissions": permissions,
-	"exp": time.Now().Add(
-		time.Hour * 24,
-	).Unix(),
-}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	return token.SignedString(cfg.JWTPrivKey)
+    if cfg == nil {
+        return "", errors.New("jwt config is nil")
+    }
+
+    if cfg.JWTPrivKey == nil {
+        return "", errors.New("jwt private key is nil")
+    }
+
+    claims := jwt.MapClaims{
+        "sub": id,
+        "username": username,
+        "roles": roles,
+        "permissions": permissions,
+        "exp": time.Now().Add(time.Hour * 24).Unix(),
+    }
+
+    token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+
+    return token.SignedString(cfg.JWTPrivKey)
 }

@@ -8,12 +8,12 @@ import (
 )
 
 func loadProd() *Config {
-	privKeyBytes, err := os.ReadFile("/run/keys/private.pem")
+	privKeyBytes, err := os.ReadFile("keys/private.pem")
 	if err != nil {
 		log.Fatal("cannot read private key:", err)
 	}
 
-	pubKeyBytes, err := os.ReadFile("/run/keys/public.pem")
+	pubKeyBytes, err := os.ReadFile("keys/public.pem")
 	if err != nil {
 		log.Fatal("cannot read public key:", err)
 	}

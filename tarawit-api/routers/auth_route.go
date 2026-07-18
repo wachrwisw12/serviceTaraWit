@@ -11,7 +11,7 @@ import (
 
 func SetupAuth(auth fiber.Router) {
 	auth.Post(
-		"/singin",
+		"/signin",
 		middlewares.LoginLimiter(), // 🔒 brute force login
 		handlers.Authhandler,
 	)
@@ -27,4 +27,7 @@ func SetupAuth(auth fiber.Router) {
 		middlewares.JWTMiddleware,
 		handlers.Me,
 	)
+	auth.Get("/test", func(c *fiber.Ctx) error {
+		return c.SendString("test ok")
+	})
 }

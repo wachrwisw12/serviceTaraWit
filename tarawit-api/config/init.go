@@ -6,6 +6,7 @@ import (
 )
 
 func Load() {
+
 	env := os.Getenv("APP_ENV")
 
 	if env == "" {
@@ -13,11 +14,20 @@ func Load() {
 	}
 
 	switch env {
+
 	case "prod":
 		Cfg = loadProd()
+
 	default:
 		Cfg = loadDev()
 	}
 
-	log.Printf("🚀 running in %s mode\n", env)
+
+	if Cfg == nil {
+		log.Fatal("❌ Config loading failed")
+	}
+
+	log.Println("🚀 running in", env)
+	log.Println("JWT Private Key:", Cfg.JWTPrivKey != nil)
+	log.Println("JWT Public Key:", Cfg.JWTPubKey != nil)
 }

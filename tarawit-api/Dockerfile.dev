@@ -2,7 +2,6 @@ FROM golang:1.25
 
 WORKDIR /app
 
-# install air (hot reload)
 RUN go install github.com/air-verse/air@v1.61.1
 
 COPY go.mod go.sum ./
@@ -10,7 +9,6 @@ RUN go mod download
 
 COPY . .
 
-EXPOSE 8080
+EXPOSE 8000
 
 CMD ["air", "-c", ".air.toml"]
-

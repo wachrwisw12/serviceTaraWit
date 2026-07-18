@@ -10,7 +10,7 @@ import (
 
 func SetupRoute(app *fiber.App) {
 	api := app.Group("/api")
-
+    
 	SetupAuth(api.Group("/auth"))
 	SetupEvaluationRoute(api.Group("/evaluation",middlewares.JWTMiddleware))
 	SetupUserRoute(api.Group("/user",middlewares.JWTMiddleware))

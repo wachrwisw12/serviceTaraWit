@@ -1,5 +1,4 @@
-# Build stage
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25 AS builder
 
 WORKDIR /app
 
@@ -8,18 +7,13 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o server main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o server .
 
-# Run stage
+
 FROM alpine:latest
 
 WORKDIR /app
-# COPY .env .env
-COPY keys /run/keys
+
 COPY --from=builder /app/server .
-# Copy .env เข้า container
-
-
-EXPOSE 8081
 
 CMD ["./server"]

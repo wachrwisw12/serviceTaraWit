@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"os"
+
 	"tarawitApi/config"
 	"tarawitApi/db"
 	"tarawitApi/routers"
@@ -11,44 +10,56 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
-		hash, _ := bcrypt.GenerateFromPassword([]byte("1234"), bcrypt.DefaultCost)
-	fmt.Println(string(hash))
 
-	// โหลด env ก่อน
 	if err := godotenv.Load(); err != nil {
 		log.Println("⚠️ No .env file, using system env")
 	}
 
-	config.Load()
+	// โหลด config ก่อน
+	 config.Load()
+
+	// ตรวจสอบ
+	if config.Cfg == nil {
+		log.Fatal("config is nil")
+	}
+
+	if config.Cfg.JWTPrivKey == nil {
+		log.Fatal("jwt private key is nil")
+	}
+
+	log.Println("✅ JWT keys loaded")
+
 
 	// connect DB
 	db.ConnectDB()
 	defer db.DB.Close()
 
-	log.Println("DB_HOST:", os.Getenv("DB_HOST"))
-	log.Println("DB_PORT:", os.Getenv("DB_PORT"))
-	log.Println("DB_NAME:", os.Getenv("POSTGRES_DB"))
-
-	
 
 	app := fiber.New(fiber.Config{
 		ProxyHeader:             fiber.HeaderXForwardedProto,
 		EnableTrustedProxyCheck: true,
 	})
 
+
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: os.Getenv("AllowOrigins"),
-		AllowMethods: os.Getenv("AllowMethods"),
-		AllowHeaders: os.Getenv("AllowHeaders"),
+		AllowOrigins: "http://localhost:5173",
+		AllowMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 	}))
+
+
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
+
 
 	routers.SetupRoute(app)
 	routers.SetupWS(app)
 
-	log.Println("🚀 API started on :8080")
-	log.Fatal(app.Listen(":8080"))
+
+	log.Println("🚀 API started on :8000")
+	log.Fatal(app.Listen(":8000"))
 }
