@@ -20,6 +20,6 @@ COPY --from=builder /app/server .
 # Copy .env เข้า container
 
 
-EXPOSE 8080
+EXPOSE 8081
 
 CMD ["./server"]
