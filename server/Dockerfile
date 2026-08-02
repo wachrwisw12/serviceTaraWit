@@ -1,13 +1,15 @@
-FROM nginx:alpine
+FROM golang:1.25-alpine
 
-# ลบ default config
-RUN rm -f /etc/nginx/conf.d/default.conf
+WORKDIR /app
 
-# ใส่ nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+ENV PATH="/go/bin:${PATH}"
 
-# เอา dist ที่ build แล้วไป serve
- COPY dist /usr/share/nginx/html/
+RUN go install github.com/air-verse/air@latest
 
-EXPOSE 3000
-CMD ["nginx", "-g", "daemon off;"]
+COPY go.mod go.sum ./
+
+RUN go mod download
+
+COPY . .
+
+CMD ["air"]
