@@ -6,7 +6,9 @@ import (
 	evaluationModels "tarawitApi/evaluationFeature/evaluation_models"
 )
 
-type EvaluationRepository struct{}
+type EvaluationRepository struct{
+	 
+}
 
 func NewEvaluationRepository() *EvaluationRepository {
     return &EvaluationRepository{}
@@ -23,6 +25,7 @@ func (r *EvaluationRepository) GetTemplate() ([]evaluationModels.EvaTemplateResp
 		evaluation_target_id,
 		versions,
 		status,
+		template_type,
 		created_by,
 		created_at
 	FROM evaluation_templates
@@ -48,6 +51,7 @@ func (r *EvaluationRepository) GetTemplate() ([]evaluationModels.EvaTemplateResp
 			&template.EvaluationTargetID,
 			&template.Versions,
 			&template.Status,
+			&template.TemplateType,
 			&template.CreatedBy,
 			&template.CreatedAt,
 		)

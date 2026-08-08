@@ -9,7 +9,7 @@ func (s *EvaluationService) GetMyInstance(userId int64) ([]evaluationModels.Inst
 	return s.repo.GetMyInstance(userId)
 }
 
-func (s *EvaluationService) GetMyInstanceDetail(userId int64, instanceId int64) (*evaluationModels.InstanceDetailResponce, error) {
+func (s *EvaluationService) GetMyInstanceDetail(userId int64, instanceId int64) (*evaluationModels.InstanceDetailResponse, error) {
 	return s.repo.GetMyInstanceDetail(userId, instanceId)
 }
 

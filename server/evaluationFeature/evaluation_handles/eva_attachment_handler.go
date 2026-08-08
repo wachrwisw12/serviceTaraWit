@@ -42,7 +42,7 @@ func (h *EvaluationHandler) UploadInstanceAttachment(c *fiber.Ctx) error {
 	attachment, err := h.service.UploadInstanceAttachment(
 		instanceID,
 		targetID,
-		userID,
+		int(userID),
 		file,
 	)
 
@@ -131,7 +131,7 @@ func (h *EvaluationHandler) DeleteInstanceAttachment(c *fiber.Ctx) error {
 		instanceID,
 		targetID,
 		attachmentID,
-		userID,
+		int(userID),
 	)
 
 	if err != nil {

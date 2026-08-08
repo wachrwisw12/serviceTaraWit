@@ -2,9 +2,7 @@ package evaluationModels
 
 import "time"
 
-// --- List response (GET /evaluation/instances/get-my-instance) ---
-// Unchanged from your original — matches evaluation_instance_evaluators exactly
-// (id, instance_id, user_id, name_snapshot, position_snapshot, created_at).
+
 
 type EvaluatorInfo struct {
 	UserId            int64   `json:"user_id"`
@@ -70,10 +68,11 @@ type TargetInfo struct {
 	Position *string `json:"position"`
 }
 
-type InstanceDetailResponce struct {
+type InstanceDetailResponse struct {
 	ID                    int64              `json:"id"`
 	TemplateId            int64              `json:"template_id"`
 	TemplateName          string             `json:"template_name"`
+	TemplateType          string             `json:"template_type"`
 	InstanceName          *string            `json:"instance_name"`
 	Status                string             `json:"status"`
 	StartDate             *time.Time         `json:"start_date"`

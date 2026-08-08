@@ -79,12 +79,12 @@ type InstanceListResponce struct {
 	Round        string       `json:"round"`
 	Target       TargetDTO    `json:"target"`
 	Status       string       `json:"status"`
-	TargetUserId uint 		`json:"target_user_id"`
+	TargetUserId int64 		`json:"target_user_id"`
 	Evaluators   []Evaluators `json:"evaluators"`
 }
 
 type Evaluators struct {
-	UserId            uint   `json:"user_id"`
+	UserId            int64   `json:"user_id"`
 	NameSnapshort     string `json:"name_snapshort"`
 	PositionSnapshort string `json:"position_snapshort"` // แก้ tag
 }

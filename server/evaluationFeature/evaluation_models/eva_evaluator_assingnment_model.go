@@ -5,6 +5,7 @@ import "time"
 type EvaluatorAssignmentDetail struct {
 	ID             int                     `json:"id"`
 	TemplateID     int                     `json:"template_id"`
+	TemplateType	string `json:"template_type"`
 	TemplateName   string                  `json:"template_name"`
 	InstanceName   *string                 `json:"instance_name"`
 	Status         string                  `json:"status"`

@@ -21,6 +21,7 @@ SELECT
     ei.id,
     ei.template_id,
     ei.template_name,
+    tt.template_type,
     ei.instance_name,
     ei.status,
     ei.start_date,
@@ -146,7 +147,8 @@ FROM evaluation_assignments a
 
 JOIN evaluation_instances ei
 ON ei.id = a.instance_id
-
+JOIN evaluation_template tt
+ON tt.id = ei.template_id
 JOIN evaluation_targets et
 ON et.id = a.target_id
 
@@ -182,6 +184,7 @@ var questionJSON []byte
     &detail.ID,
     &detail.TemplateID,
     &detail.TemplateName,
+    &detail.TemplateType,
     &detail.InstanceName,
     &detail.Status,
     &detail.StartDate,

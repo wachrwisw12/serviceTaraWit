@@ -8,7 +8,7 @@ import (
 
 func (s *EvaluationService)GetMyTasks(
 	ctx context.Context,
-	userID int64,
+	userID int64 ,
 )(
 	[]evaluationModels.MyEvaluationTaskResponse,
 	error,
@@ -18,7 +18,6 @@ func (s *EvaluationService)GetMyTasks(
 		ctx,
 		userID,
 	)
-
 }
 
 func (s *EvaluationService) GetBatchTargets(

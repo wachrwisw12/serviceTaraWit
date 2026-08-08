@@ -105,13 +105,14 @@ ORDER BY ei.id DESC;
 func (r *EvaluationRepository) GetMyInstanceDetail(
 	userId int64,
 	instanceId int64,
-) (*evaluationModels.InstanceDetailResponce, error) {
+) (*evaluationModels.InstanceDetailResponse, error) {
 
 	instanceQuery := `
 SELECT
     ei.id,
     ei.template_id,
     COALESCE(ei.template_name, '') AS template_name,
+    t.template_type,
     ei.instance_name,
     ei.status,
     ei.start_date,
@@ -242,13 +243,15 @@ LEFT JOIN positions pos
 LEFT JOIN prefixes pf
     ON pf.id = u.prefix_id
 
+LEFT JOIN evaluation_templates t
+    ON t.id = ei.template_id
 
 WHERE ei.id = $2;
 `
 
 	row := db.DB.QueryRow(context.Background(), instanceQuery, userId, instanceId)
 
-	var detail evaluationModels.InstanceDetailResponce
+	var detail evaluationModels.InstanceDetailResponse
 	var evaluatorJSON []byte
     var fieldJSON []byte
     var questionJSON []byte
@@ -257,6 +260,7 @@ WHERE ei.id = $2;
 	&detail.ID,
 	&detail.TemplateId,
 	&detail.TemplateName,
+	&detail.TemplateType,
 	&detail.InstanceName,
 	&detail.Status,
 	&detail.StartDate,
@@ -266,13 +270,11 @@ WHERE ei.id = $2;
 	&detail.AcademicYear,
 	&detail.Round,
 	&detail.ShowScoreToVisibility,
-
 	&detail.Target.ID,
 	&detail.Target.UserId,
 	&detail.Target.Status,
 	&detail.Target.Name,
 	&detail.Target.Position,
-
 	&evaluatorJSON,
 	&fieldJSON,
 	&questionJSON,

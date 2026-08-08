@@ -35,7 +35,7 @@ func (h *EvaluationHandler) GetMyinstance(c *fiber.Ctx) error {
 
 // GetMyInstanceDetail คืนรายละเอียดของ instance เดียว สำหรับ user ที่เป็น target ของ instance นั้นเท่านั้น
 func (h *EvaluationHandler) GetMyInstanceDetail(c *fiber.Ctx) error {
-
+   
 	userID, ok := c.Locals("user_id").(int64)
 	if !ok {
 		log.Println("❌ user_id not found in context or wrong type")

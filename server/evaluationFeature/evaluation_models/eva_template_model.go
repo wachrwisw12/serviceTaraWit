@@ -9,6 +9,7 @@ type EvaTemplateResponse struct {
 	Description        string    `json:"description"`
 	EvaluationTargetID string       `json:"evaluation_target_id"`
 	Versions            int       `json:"Versions"`
+	TemplateType       string    `json:"template_type"`
 	Status             string    `json:"status"`
 	CreatedBy          int       `json:"created_by"`
 	CreatedAt          time.Time `json:"created_at"`

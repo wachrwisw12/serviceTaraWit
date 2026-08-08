@@ -117,11 +117,11 @@ func GenerateJWT(
     return token.SignedString(cfg.JWTPrivKey)
 }
 
-func GetCurrentUserID(c *fiber.Ctx) (int, error) {
+func GetCurrentUserID(c *fiber.Ctx) (int64, error) {
 	userID, ok := c.Locals("user_id").(int64)
 	if !ok {
 		return 0, fmt.Errorf("user_id not found in context")
 	}
 
-	return int(userID), nil
+	return userID, nil
 }
