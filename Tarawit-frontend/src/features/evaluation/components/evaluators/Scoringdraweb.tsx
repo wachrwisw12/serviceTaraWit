@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { Drawer, IconButton } from "@mui/material";
 import { X } from "lucide-react";
-
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
-
+import { useDialog } from "../../../../components/dialog";
 import {
   canEvaluatorAnswer,
   getTemplateTypeConfig,
@@ -13,13 +12,17 @@ import type { TargetInstanceStatus } from "../../api/batchtargetSlice";
 
 import AttachmentViewer from "../Attachmentviewer";
 import EavaluationSectionForm from "../evaluationInstance/EavaluationSectionForm";
-import { fetchEvaluatorDetail } from "../../api/EvaluatorSlice";
+import {
+  fetchEvaluatorDetail,
+  submitEvaluationAnswers,
+} from "../../api/EvaluatorSlice";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   targetUserId: number;
   targetName: string;
+  assignmentsId: number;
   instance: TargetInstanceStatus | null;
   onSubmitted?: () => void;
 }
@@ -27,6 +30,7 @@ interface Props {
 export default function ScoringDrawer({
   open,
   onClose,
+  assignmentsId,
   instance,
   targetUserId,
   targetName,
@@ -34,27 +38,22 @@ export default function ScoringDrawer({
   onSubmitted: _onSubmitted,
 }: Props) {
   const dispatch = useAppDispatch();
-
   const { detail, loading } = useAppSelector((state) => state.evaluator);
-
   const [answers, setAnswers] = useState<Record<number, number>>({});
-
+  console.log("assignmentsId", assignmentsId);
   const [submitting, setSubmitting] = useState(false);
-
   const [submitError, setSubmitError] = useState<string | null>(null);
-  console.log("instance", instance);
-  console.log("instance_id", instance?.instance_id);
-  console.log("targetUserId", targetUserId);
+
+  const { confirm } = useDialog();
   /*
    * โหลดรายละเอียดเมื่อเปิด Drawer
    */
-  console.log("instance", instance?.instance_id);
+  console.log("detail", detail);
   useEffect(() => {
-    if (!open || !instance) return;
+    if (!open || !assignmentsId) return;
 
-    dispatch(fetchEvaluatorDetail(instance.instance_id));
-  }, [open, instance?.instance_id, targetUserId, dispatch, instance]);
-
+    dispatch(fetchEvaluatorDetail(assignmentsId));
+  }, [open, assignmentsId, dispatch]);
   /*
    * เคลียร์ state เมื่อเปลี่ยนรายการ
    */
@@ -63,7 +62,7 @@ export default function ScoringDrawer({
     setAnswers({});
     setSubmitting(false);
     setSubmitError(null);
-  }, [instance?.instance_id, targetUserId]);
+  }, [assignmentsId, targetUserId]);
 
   /*
    * อ่าน config จาก template_type
@@ -116,13 +115,18 @@ export default function ScoringDrawer({
   /*
    * ปิด Drawer
    */
-  const handleRequestClose = () => {
+  const handleRequestClose = async () => {
     if (submitting) return;
 
     if (hasUnsavedAnswers) {
-      const confirmed = window.confirm(
-        "คะแนนที่กรอกไว้ยังไม่ได้บันทึก คุณต้องการออกและทิ้งคะแนนเหล่านี้หรือไม่?",
-      );
+      const confirmed = await confirm({
+        type: "warning",
+        title: "ยกเลิกการให้คะแนน?",
+        message:
+          "คุณมีคะแนนที่ยังไม่ได้บันทึก หากออกตอนนี้คะแนนที่กรอกไว้จะหายทั้งหมด",
+        confirmText: "ออกโดยไม่บันทึก",
+        cancelText: "กลับไปให้คะแนน",
+      });
 
       if (!confirmed) return;
     }
@@ -133,12 +137,6 @@ export default function ScoringDrawer({
     onClose();
   };
 
-  /*
-   * ตรวจสอบก่อนบันทึก
-   *
-   * ตอนนี้ยังไม่เรียก API เพราะ MyInstanceSlice
-   * ยังไม่มี submitInstanceAnswers
-   */
   const handleSubmit = async () => {
     if (!instance || !detail || submitting) {
       return;
@@ -166,17 +164,47 @@ export default function ScoringDrawer({
       return;
     }
 
-    /*
-     * รอเชื่อม submitInstanceAnswers
-     *
-     * ห้ามเรียก onSubmitted และ onClose ตอนนี้
-     * เพราะข้อมูลยังไม่ได้ถูกบันทึกจริง
-     */
-    setSubmitError(
-      "ให้คะแนนครบแล้ว แต่ยังไม่ได้เชื่อมต่อ API สำหรับบันทึกคะแนน",
-    );
-  };
+    const confirmed = await confirm({
+      type: "warning",
+      title: "ยืนยันการบันทึกคะแนน?",
+      message: "กรุณาตรวจสอบคะแนนให้เรียบร้อยก่อนบันทึกผลการประเมิน",
+      confirmText: "บันทึกคะแนน",
+      cancelText: "ตรวจสอบอีกครั้ง",
+    });
 
+    if (!confirmed) return;
+
+    const payload = {
+      assignment_id: assignmentsId,
+      answers: Object.entries(answers).map(([questionId, score]) => ({
+        question_id: Number(questionId),
+        score,
+        answer_text: null,
+      })),
+    };
+
+    console.log("submit payload:", payload);
+
+    try {
+      setSubmitting(true);
+      setSubmitError(null);
+
+      await dispatch(submitEvaluationAnswers(payload)).unwrap();
+
+      setAnswers({});
+
+      _onSubmitted?.();
+
+      onClose();
+    } catch (error) {
+      const message =
+        typeof error === "string" ? error : "บันทึกคะแนนไม่สำเร็จ";
+
+      setSubmitError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
   return (
     <Drawer
       anchor="right"

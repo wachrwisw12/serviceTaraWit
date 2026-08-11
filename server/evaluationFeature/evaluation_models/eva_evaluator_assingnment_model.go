@@ -45,13 +45,7 @@ type EvaluationEvaluator struct {
 }
 
 
-// type InstanceField struct {
-// 	ID          int     `json:"id"`
-// 	FieldKey    string  `json:"field_key"`
-// 	Label       string  `json:"label"`
-// 	FieldType   string  `json:"field_type"`
-// 	Value       *string `json:"value"`
-// }
+
 
 type EvaluatorQuestion struct {
 	ID                int     `json:"id"`
@@ -70,8 +64,19 @@ type EvaluatorQuestion struct {
 }
 
 
-// type QuestionChoice struct {
-// 	ID     int    `json:"id"`
-// 	Label  string `json:"label"`
-// 	Score  int    `json:"score"`
-// }
+
+
+type SubmitAnswerItem struct {
+	QuestionID int64 `json:"question_id"`
+	Score      int   `json:"score"`
+}
+
+type SubmitEvaluationRequest struct {
+	Answers []SubmitAnswerItem `json:"answers"`
+}
+
+type SubmitEvaluationResponse struct {
+	AssignmentID int64 `json:"assignment_id"`
+	TotalAnswers int   `json:"total_answers"`
+	Status       string `json:"status"`
+}

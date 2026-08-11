@@ -9,6 +9,7 @@ import evaluationTaskSlice from "../features/evaluation/api/MyTaskSlice.ts";
 import batchTargetReducer from "../features/evaluation/api/batchtargetSlice.ts"; // ปรับ path ให้ตรงจริง
 import evaluatorSlice from "../features/evaluation/api/EvaluatorSlice.ts";
 import roleSlice from "../features/role/api/RoleSlice.ts";
+import createdEvaluationReducer from "../features/evaluation/api/createdEvaluationSlice.ts";
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -20,6 +21,7 @@ export const store = configureStore({
     batchTarget: batchTargetReducer,
     evaluator: evaluatorSlice,
     roleSlice: roleSlice,
+    createdEvaluation: createdEvaluationReducer,
     ui: uiReducer,
   },
 });

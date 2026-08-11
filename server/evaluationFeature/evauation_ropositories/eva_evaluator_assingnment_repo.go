@@ -2,7 +2,9 @@ package evaluationRepositories
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"fmt"
 
 	"tarawitApi/db"
 	evaluationModels "tarawitApi/evaluationFeature/evaluation_models"
@@ -135,7 +137,7 @@ COALESCE(
             FROM evaluation_instance_questions eiq
             LEFT JOIN evaluation_sections sec
                 ON sec.id = eiq.section_id
-            LEFT JOIN evaluation_scores es
+            LEFT JOIN evaluation_answers es
                 ON es.assignment_id = a.id
                AND es.question_id = eiq.id
             WHERE eiq.evaluation_instance_id = ei.id
@@ -147,7 +149,7 @@ FROM evaluation_assignments a
 
 JOIN evaluation_instances ei
 ON ei.id = a.instance_id
-JOIN evaluation_template tt
+JOIN evaluation_templates tt
 ON tt.id = ei.template_id
 JOIN evaluation_targets et
 ON et.id = a.target_id
@@ -232,4 +234,376 @@ if err := json.Unmarshal(questionJSON, &detail.Questions); err != nil {
 
 
 	return &detail,nil
+}
+
+func (r *EvaluationRepository)  SubmitEvaluationAnswers(
+	ctx context.Context,
+	assignmentID int64,
+	evaluatorUserID int64,
+	req evaluationModels.SubmitEvaluationRequest,
+) (*evaluationModels.SubmitEvaluationResponse, error) {
+
+	if db.DB == nil {
+		return nil, fmt.Errorf("database connection is not initialized")
+	}
+
+	tx, err := db.DB.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"เริ่ม transaction ไม่สำเร็จ: %w",
+			err,
+		)
+	}
+
+	committed := false
+
+	defer func() {
+		if !committed {
+			_ = tx.Rollback(ctx)
+		}
+	}()
+
+	// --------------------------------------------------
+	// 1. ตรวจ Assignment + สิทธิ์ผู้ประเมิน
+	// --------------------------------------------------
+
+	var (
+		instanceID int64
+		status     string
+	)
+
+	err = tx.QueryRow(
+		ctx,
+		`
+		SELECT
+			a.instance_id,
+			a.status
+		FROM evaluation_assignments a
+		WHERE a.id = $1
+		  AND a.evaluator_id = $2
+		FOR UPDATE
+		`,
+		assignmentID,
+		evaluatorUserID,
+	).Scan(
+		&instanceID,
+		&status,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf(
+				"ไม่พบรายการประเมิน หรือคุณไม่มีสิทธิ์ประเมินรายการนี้",
+			)
+		}
+
+		return nil, fmt.Errorf(
+			"ตรวจสอบ assignment ไม่สำเร็จ: %w",
+			err,
+		)
+	}
+
+	if status == "submitted" {
+		return nil, fmt.Errorf(
+			"รายการประเมินนี้ถูกส่งคะแนนแล้ว",
+		)
+	}
+
+	// --------------------------------------------------
+	// 2. ตรวจสถานะ Instance
+	// --------------------------------------------------
+
+	var instanceStatus string
+
+	err = tx.QueryRow(
+		ctx,
+		`
+		SELECT status
+		FROM evaluation_instances
+		WHERE id = $1
+		`,
+		instanceID,
+	).Scan(&instanceStatus)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf(
+				"ไม่พบรายการประเมิน",
+			)
+		}
+
+		return nil, fmt.Errorf(
+			"ตรวจสอบสถานะการประเมินไม่สำเร็จ: %w",
+			err,
+		)
+	}
+
+	if instanceStatus != "OPEN" {
+		return nil, fmt.Errorf(
+			"รายการประเมินไม่ได้อยู่ในสถานะเปิด",
+		)
+	}
+
+	// --------------------------------------------------
+	// 3. Validate payload ซ้ำ
+	// --------------------------------------------------
+
+	if len(req.Answers) == 0 {
+		return nil, fmt.Errorf("ไม่พบคำตอบ")
+	}
+
+	seenQuestions := make(map[int64]struct{})
+
+	// --------------------------------------------------
+	// 4. ตรวจและบันทึกคำตอบ
+	// --------------------------------------------------
+
+	for _, answer := range req.Answers {
+   
+		if answer.QuestionID <= 0 {
+			return nil, fmt.Errorf(
+				"question_id ไม่ถูกต้อง",
+			)
+		}
+
+		if _, exists := seenQuestions[answer.QuestionID]; exists {
+			return nil, fmt.Errorf(
+				"พบ question_id %d ซ้ำ",
+				answer.QuestionID,
+			)
+		}
+
+		seenQuestions[answer.QuestionID] = struct{}{}
+
+		var (
+			questionType string
+			maxScore     sql.NullInt64
+		)
+
+		// สำคัญ:
+		// question_id จาก frontend คือ
+		// evaluation_instance_questions.id
+		err = tx.QueryRow(
+			ctx,
+			`
+			SELECT
+				question_type,
+				max_score
+			FROM evaluation_instance_questions
+			WHERE id = $1
+			  AND evaluation_instance_id = $2
+			`,
+			answer.QuestionID,
+			instanceID,
+		).Scan(
+			&questionType,
+			&maxScore,
+		)
+
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, fmt.Errorf(
+					"คำถาม id %d ไม่อยู่ในการประเมินนี้",
+					answer.QuestionID,
+				)
+			}
+
+			return nil, fmt.Errorf(
+				"ตรวจสอบคำถาม id %d ไม่สำเร็จ: %w",
+				answer.QuestionID,
+				err,
+			)
+		}
+
+		// ตอนนี้ ScoringDrawer รองรับ SCALE
+		if questionType != "SCALE" {
+			return nil, fmt.Errorf(
+				"คำถาม id %d ไม่ใช่คำถามแบบให้คะแนน",
+				answer.QuestionID,
+			)
+		}
+
+		if answer.Score < 0 {
+			return nil, fmt.Errorf(
+				"คะแนนของคำถาม id %d ไม่ถูกต้อง",
+				answer.QuestionID,
+			)
+		}
+
+		if maxScore.Valid &&
+			answer.Score > int(maxScore.Int64) {
+
+			return nil, fmt.Errorf(
+				"คะแนนของคำถาม id %d ต้องไม่เกิน %d",
+				answer.QuestionID,
+				maxScore.Int64,
+			)
+		}
+
+		// --------------------------------------------------
+		// บันทึก evaluation_scores
+		// --------------------------------------------------
+
+		_, err = tx.Exec(
+			ctx,
+			`
+			INSERT INTO evaluation_answers (
+				assignment_id,
+				question_id,
+				score,
+				created_at,
+				updated_at
+			)
+			VALUES (
+				$1,
+				$2,
+				$3,
+				NOW(),
+				NOW()
+			)
+			ON CONFLICT (
+				assignment_id,
+				question_id
+			)
+			DO UPDATE SET
+				score = EXCLUDED.score,
+				updated_at = NOW()
+			`,
+			assignmentID,
+			answer.QuestionID,
+			answer.Score,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf(
+				"บันทึกคะแนนคำถาม id %d ไม่สำเร็จ: %w",
+				answer.QuestionID,
+				err,
+			)
+		}
+	}
+
+	// --------------------------------------------------
+	// 5. จำนวนคำถามที่ต้องตอบ
+	// --------------------------------------------------
+
+	var totalQuestions int
+
+	err = tx.QueryRow(
+		ctx,
+		`
+		SELECT COUNT(*)
+		FROM evaluation_instance_questions
+		WHERE evaluation_instance_id = $1
+		  AND question_type = 'SCALE'
+		`,
+		instanceID,
+	).Scan(&totalQuestions)
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"ตรวจสอบจำนวนคำถามไม่สำเร็จ: %w",
+			err,
+		)
+	}
+
+	if totalQuestions == 0 {
+		return nil, fmt.Errorf(
+			"ไม่พบคำถามสำหรับการประเมินนี้",
+		)
+	}
+
+	// --------------------------------------------------
+	// 6. จำนวนคำตอบของ Assignment นี้
+	// --------------------------------------------------
+
+	var totalAnswers int
+
+	err = tx.QueryRow(
+		ctx,
+		`
+		SELECT COUNT(*)
+		FROM evaluation_answers es
+		JOIN evaluation_instance_questions eiq
+		  ON eiq.id = es.question_id
+		WHERE es.assignment_id = $1
+		  AND eiq.evaluation_instance_id = $2
+		  AND eiq.question_type = 'SCALE'
+		`,
+		assignmentID,
+		instanceID,
+	).Scan(&totalAnswers)
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"ตรวจสอบจำนวนคำตอบไม่สำเร็จ: %w",
+			err,
+		)
+	}
+
+	if totalAnswers != totalQuestions {
+		return nil, fmt.Errorf(
+			"กรุณาให้คะแนนให้ครบทุกข้อ (%d/%d)",
+			totalAnswers,
+			totalQuestions,
+		)
+	}
+
+	// --------------------------------------------------
+	// 7. เปลี่ยน Assignment เป็น submitted
+	// --------------------------------------------------
+
+	result, err := tx.Exec(
+		ctx,
+		`
+		UPDATE evaluation_assignments
+		SET
+			status = 'submitted',
+			submitted_at = NOW()
+		WHERE id = $1
+		  AND evaluator_id = $2
+		`,
+		assignmentID,
+		evaluatorUserID,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf(
+			"อัปเดตสถานะการประเมินไม่สำเร็จ: %w",
+			err,
+		)
+	}
+
+	rowsAffected := result.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf(
+			"ตรวจสอบผลการอัปเดต assignment ไม่สำเร็จ: %w",
+			err,
+		)
+	}
+
+	if rowsAffected == 0 {
+		return nil, fmt.Errorf(
+			"ไม่สามารถอัปเดตสถานะ assignment ได้",
+		)
+	}
+
+	// --------------------------------------------------
+	// 8. Commit
+	// --------------------------------------------------
+
+	if err := tx.Commit(ctx); err != nil {
+	return nil, fmt.Errorf(
+		"commit transaction ไม่สำเร็จ: %w",
+		err,
+	)
+}
+
+	committed = true
+
+	return &evaluationModels.SubmitEvaluationResponse{
+		AssignmentID: assignmentID,
+		TotalAnswers: totalAnswers,
+		Status:       "submitted",
+	}, nil
 }

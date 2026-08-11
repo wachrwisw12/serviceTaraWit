@@ -239,6 +239,7 @@ text-gray-400
       <ScoringDrawer
         open={activeItem !== null}
         onClose={() => setActiveItem(null)}
+        assignmentsId={activeItem?.instance.my_assignment_id ?? 0}
         targetUserId={activeItem?.target.user_id ?? 0}
         targetName={activeItem?.target.name ?? ""}
         instance={activeItem?.instance ?? null}

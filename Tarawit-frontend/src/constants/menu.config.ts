@@ -61,7 +61,7 @@ export const pages: MenuItem[] = [
       },
       {
         id: "evaluation-instancelist",
-        label: "สร้างการประเมิน",
+        label: "สร้างแบบการประเมิน",
         path: "evaluation/instance/create",
         permission: "instance.create",
       },

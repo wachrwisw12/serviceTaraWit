@@ -8,12 +8,13 @@ import AuthRoute from "./authRoute";
 
 import HomePage from "../features/dashboard/pages/HomePage";
 import TemplateListPage from "../features/evaluation/pages/TemplateListPage";
-import CreateEvaluationPage from "../features/evaluation/pages/CreateInstancePage";
 import TemplateDetailPage from "../features/evaluation/pages/TemplateDetailPage";
 import UserManagementPage from "../features/user/page/UserManagementPage";
 import MyEvaluationPage from "../features/evaluation/pages/MyEvaluationPage";
 import BatchTargetListPage from "../features/evaluation/pages/BatchTargetListPage";
 import MyEvaluationResultDetailPage from "../features/evaluation/pages/MyEvaluationResultDetailPage";
+// import MyCreatedEvaluationsPage from "@/features/evaluation/pages/MyCreatedEvaluationsPage";
+import CreateEvaluationPage from "@/features/evaluation/pages/CreateInstancePage";
 // import RolePage from "../features/role/pages/RolePage";
 
 const router = createBrowserRouter(

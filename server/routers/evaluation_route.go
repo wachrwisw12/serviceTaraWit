@@ -85,4 +85,20 @@ evaluationRoute.Get(
     "/evaluator/assignments/:assignmentId",
     handler.GetEvaluatorAssignmentDetail,
 )
+// บันทึกคะแนน
+evaluationRoute.Post(
+	"/evaluator/assignments/:assignmentId/submit",
+	handler.SubmitEvaluationAnswers,
+)
+
+//ที่ฉันสร้างการประเมิน
+evaluationRoute.Get(
+	"/evaluation-instances/my-created",
+	handler.GetMyCreatedEvaluations,
+)
+
+evaluationRoute.Patch(
+	"/evaluation-instances/:id/start",
+	handler.StartEvaluationInstance,
+)
 }
