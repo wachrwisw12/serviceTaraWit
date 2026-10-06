@@ -1,0 +1,18 @@
+FROM golang:1.26-alpine AS builder
+
+WORKDIR /src
+
+COPY server/go.mod server/go.sum ./
+RUN go mod download
+
+COPY server/ ./
+RUN CGO_ENABLED=0 go build -trimpath -o /out/tarawit-migrate ./cmd/migrate
+
+FROM alpine:3.22
+
+RUN addgroup -S app && adduser -S -G app app
+COPY --from=builder /out/tarawit-migrate /usr/local/bin/tarawit-migrate
+
+USER app
+ENTRYPOINT ["tarawit-migrate"]
+CMD ["status"]

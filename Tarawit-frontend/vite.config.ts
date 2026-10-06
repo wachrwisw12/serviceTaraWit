@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
 
         includeAssets: [
           "favicon.ico",
+          "favicon.png",
           "apple-touch-icon.png",
           "robots.txt",
           "icons/icon-192.png",
@@ -33,10 +34,10 @@ export default defineConfig(({ mode }) => {
 
         manifest: {
           id: "/",
-          name: "ระบบนิเทศน์ภายในสถานศึกษา",
-          short_name: "THARAE INSPIRE",
+          name: "ระบบบริหารจัดการโรงเรียน",
+          short_name: "TARAWIT",
           description:
-            "ระบบนิเทศน์ภายในสถานศึกษา สำหรับโรงเรียนในสังกัด สพป.สน.1",
+            "ระบบบริหารจัดการโรงเรียนท่าแร่วิทยา — ลงเวลาปฏิบัติงาน ประเมินบุคลากร ข้อมูลบุคลากร และตั้งค่าระบบ",
 
           lang: "th",
           dir: "ltr",
@@ -47,21 +48,21 @@ export default defineConfig(({ mode }) => {
           orientation: "portrait",
 
           background_color: "#ffffff",
-          theme_color: "#1976d2",
+          theme_color: "#1f3e57",
 
           icons: [
             {
-              src: "/icons/icon-19-v2.png",
+              src: "/icons/icon-192.png",
               sizes: "192x192",
               type: "image/png",
             },
             {
-              src: "/icons/icon-51-v2.png",
+              src: "/icons/icon-512.png",
               sizes: "512x512",
               type: "image/png",
             },
             {
-              src: "/icons/icon-51-v2.png",
+              src: "/icons/icon-512-maskable.png",
               sizes: "512x512",
               type: "image/png",
               purpose: "maskable",
@@ -73,6 +74,10 @@ export default defineConfig(({ mode }) => {
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
+          importScripts: ["sw-force-refresh-v1.js"],
+
+          // โลโก้จริงมีขนาด ~2.1 MB เกินค่า default 2 MiB ต้องขยาย limit ให้ precache ได้
+          maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
 
           navigateFallback: "/index.html",
 
@@ -142,6 +147,38 @@ export default defineConfig(({ mode }) => {
       sourcemap: false,
 
       assetsInlineLimit: 4096,
+
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            // Heavy charting library (only used by pptx-preview)
+            if (id.includes("node_modules/echarts")) {
+              return "vendor-echarts";
+            }
+            // Shared zip library (used by docx-preview & pptx-preview)
+            if (id.includes("node_modules/jszip")) {
+              return "vendor-jszip";
+            }
+            // React + MUI ecosystem (tightly coupled, avoid circular chunks)
+            if (
+              id.includes("node_modules/react") ||
+              id.includes("node_modules/react-dom") ||
+              id.includes("node_modules/@mui") ||
+              id.includes("node_modules/react-router") ||
+              id.includes("node_modules/@emotion")
+            ) {
+              return "vendor-react";
+            }
+            // Other large vendor libraries
+            if (id.includes("node_modules/lodash")) {
+              return "vendor-lodash";
+            }
+            if (id.includes("node_modules/leaflet")) {
+              return "vendor-leaflet";
+            }
+          },
+        },
+      },
     },
   };
 });

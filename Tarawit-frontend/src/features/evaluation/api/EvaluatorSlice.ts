@@ -32,6 +32,7 @@ export type SubmitEvaluationAnswerItem = {
 export type SubmitEvaluationAnswersPayload = {
   assignment_id: number;
   answers: SubmitEvaluationAnswerItem[];
+  comment?: string | null;
 };
 
 export const fetchEvaluatorDetail = createAsyncThunk<
@@ -46,7 +47,7 @@ export const fetchEvaluatorDetail = createAsyncThunk<
       const res = await api.get(
         `/evaluation/evaluator/assignments/${assignmentId}`,
       );
-      console.log("resdata", res.data);
+
       return res.data;
     } catch (err: unknown) {
       return thunkAPI.rejectWithValue(
@@ -77,6 +78,7 @@ export const submitEvaluationAnswers = createAsyncThunk<
         `/evaluation/evaluator/assignments/${payload.assignment_id}/submit`,
         {
           answers: payload.answers,
+          comment: payload.comment ?? null,
         },
       );
 
@@ -96,6 +98,8 @@ export const submitEvaluationAnswers = createAsyncThunk<
     }
   },
 );
+
+
 
 const evaluatorSlice = createSlice({
   name: "evaluator",
@@ -154,7 +158,9 @@ const evaluatorSlice = createSlice({
       .addCase(submitEvaluationAnswers.rejected, (state, action) => {
         state.submitting = false;
         state.submitError = action.payload ?? "บันทึกคะแนนไม่สำเร็จ";
-      });
+      })
+
+
   },
 });
 

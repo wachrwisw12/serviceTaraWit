@@ -3,8 +3,9 @@ import { createTheme } from "@mui/material/styles";
 const theme = createTheme({
   palette: {
     primary: {
-      main: "#027368",
-      contrastText: "#F2F2F2",
+      main: "#1473e6",
+      dark: "#0f5fc2",
+      contrastText: "#ffffff",
     },
     secondary: {
       main: "#ffffff",
@@ -70,7 +71,7 @@ const theme = createTheme({
     MuiTableHead: {
       styleOverrides: {
         root: {
-          backgroundColor: "#29ce60",
+          backgroundColor: "#2fae60",
         },
       },
     },

@@ -23,6 +23,8 @@ type BatchTargetResponse struct {
 
 type TargetInstanceStatus struct {
 	InstanceID    int64             `json:"instance_id"`
+	InstanceStatus string            `json:"instance_status"`
+
 	TemplateName  string            `json:"template_name"`
 	AttachmentIDs []int64           `json:"attachment_ids"`
 

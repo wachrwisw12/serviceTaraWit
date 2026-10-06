@@ -43,28 +43,28 @@ export default function Dialog({ dialog, onConfirm, onCancel }: DialogProps) {
       icon: AlertCircle,
       color: "text-blue-500",
       bg: "bg-blue-100",
-      button: "bg-blue-600 hover:bg-blue-700",
+      button: "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500/40",
     },
 
     success: {
       icon: CheckCircle2,
-      color: "text-green-500",
-      bg: "bg-green-100",
-      button: "bg-green-600 hover:bg-green-700",
+      color: "text-primary",
+      bg: "bg-primary/10",
+      button: "bg-primary hover:bg-primary-dark focus:ring-primary/40",
     },
 
     warning: {
       icon: AlertTriangle,
       color: "text-yellow-500",
       bg: "bg-yellow-100",
-      button: "bg-yellow-600 hover:bg-yellow-700",
+      button: "bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500/40",
     },
 
     error: {
       icon: XCircle,
       color: "text-red-500",
       bg: "bg-red-100",
-      button: "bg-red-600 hover:bg-red-700",
+      button: "bg-red-600 hover:bg-red-700 focus:ring-red-500/40",
     },
   };
 

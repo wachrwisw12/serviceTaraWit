@@ -38,7 +38,7 @@ export function InstanceDetail({
               <tr
                 key={inst.instance_id}
                 className={`border-t border-gray-100 transition-colors ${
-                  isActive ? "bg-emerald-50" : ""
+                  isActive ? "bg-primary/5" : ""
                 }`}
               >
                 <td className="py-3 font-medium text-gray-800">
@@ -67,15 +67,21 @@ export function InstanceDetail({
                 </td>
 
                 <td className="text-right">
-                  {me ? (
+                  {me && inst.instance_status === "OPEN" ? (
                     <button
                       onClick={() => onScore(target, inst)}
-                      className="rounded-lg bg-[#2fae60] px-3 py-1.5 text-xs text-white hover:bg-[#218a4a]"
+                      className="rounded-lg bg-primary px-3 py-1.5 text-xs text-white hover:bg-primary-dark"
                     >
                       {inst.my_status === "submitted"
                         ? "แก้ไขคะแนน"
                         : "ให้คะแนน"}
                     </button>
+                  ) : me ? (
+                    <span className="text-xs text-gray-400">
+                      {inst.instance_status === "CLOSED"
+                        ? "ปิดการประเมินแล้ว"
+                        : "ยังไม่เปิดประเมิน"}
+                    </span>
                   ) : (
                     <span className="text-xs text-gray-400">
                       ไม่ใช่ผู้ประเมิน

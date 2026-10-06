@@ -11,6 +11,7 @@ import App from "./App";
 
 import SnackbarProvider from "./components/snackbar/SnackbarProvider";
 import { DialogProvider } from "./components/dialog";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -20,7 +21,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <DialogProvider>
           <SnackbarProvider>
-            <App />
+            <ErrorBoundary label="ระบบ">
+              <App />
+            </ErrorBoundary>
           </SnackbarProvider>
         </DialogProvider>
       </QueryClientProvider>

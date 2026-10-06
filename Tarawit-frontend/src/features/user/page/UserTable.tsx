@@ -1,12 +1,9 @@
 import { SearchX, ChevronLeft, ChevronRight } from "lucide-react";
 
-import type { PersonType, UserListResponse } from "../UserType";
+import type { UserListResponse } from "../UserType";
+import UserAvatar from "../components/UserAvatar";
 
 interface Props {
-  users: UserListResponse[];
-  activeRoles: PersonType[];
-  query: string;
-  roleFilter: string;
   page: number;
   totalPages: number;
   paged: UserListResponse[];
@@ -15,8 +12,6 @@ interface Props {
 
   selectedUserId?: number;
 
-  onQueryChange: (v: string) => void;
-  onRoleChange: (v: string) => void;
   onPageChange: (page: number) => void;
 
   onSelect: (user: UserListResponse) => void;
@@ -42,7 +37,6 @@ export default function UserTable({
               <th className="px-5 py-3">ผู้ใช้งาน</th>
               <th className="px-5 py-3">ตำแหน่ง</th>
               <th className="px-5 py-3">ประเภท</th>
-              <th className="px-5 py-3">สิทธ์การใช้งาน</th>
               <th className="px-5 py-3">สถานะ</th>
               <th className="px-5 py-3 text-right">จัดการ</th>
             </tr>
@@ -56,14 +50,19 @@ export default function UserTable({
                 <tr
                   key={u.id}
                   className={`border-b border-gray-50 last:border-0 hover:bg-gray-50/60 ${
-                    selected ? "bg-[#2fae60]/5" : ""
+                    selected ? "bg-primary/5" : ""
                   }`}
                 >
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#2fae60]/10 text-sm font-semibold text-[#1f7a43]">
-                        {u.first_name?.[0] ?? ""}
-                      </div>
+                      <UserAvatar
+                        avatarUrl={u.avatar_url}
+                        prefixCode={u.prefix_code}
+                        prefixes={u.prefixes}
+                        firstName={u.first_name}
+                        className="h-9 w-9 text-sm"
+                        alt={`${u.first_name} ${u.last_name}`}
+                      />
 
                       <div className="min-w-0">
                         <div className="truncate font-medium text-gray-800">
@@ -92,31 +91,26 @@ export default function UserTable({
                     </span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <span className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
-                      {u.roles?.map((r) => r.role_name).join(", ") || "-"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5">
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ${
                         u.is_active
-                          ? "bg-[#2fae60]/10 text-[#1f7a43]"
+                          ? "bg-primary/10 text-primary-dark"
                           : "bg-gray-100 text-gray-500"
                       }`}
                     >
                       <span
                         className={`h-1.5 w-1.5 rounded-full ${
-                          u.is_active ? "bg-[#2fae60]" : "bg-gray-400"
+                          u.is_active ? "bg-primary" : "bg-gray-400"
                         }`}
                       />
-                      {u.is_active ? "Active" : "Inactive"}
+                      {u.is_active ? "ใช้งานอยู่" : "ไม่ใช้งาน"}
                     </span>
                   </td>
 
                   <td className="px-5 py-3.5 text-right">
                     <button
                       onClick={() => onSelect(u)}
-                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-[#2fae60] hover:text-[#1f7a43] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2fae60]/40"
+                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-primary hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
                       จัดการ
                     </button>

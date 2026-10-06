@@ -28,8 +28,8 @@ func (r *EvaluationRepository) GetMyTasks(
 		) AS completed_target,
 
 		CASE
-			WHEN bool_and(ei.status = 'closed') THEN 'closed'
-			WHEN bool_or(ei.status = 'open') THEN 'open'
+			WHEN bool_and(ei.status = 'CLOSED') THEN 'closed'
+			WHEN bool_or(ei.status = 'OPEN') THEN 'open'
 			ELSE 'draft'
 		END AS status
 
@@ -79,14 +79,14 @@ func (r *EvaluationRepository) GetMyTasks(
 	return result, nil
 }
 
-
 type batchTargetRow struct {
 	UserID   int64
 	Name     string
 	Position string
 
-	InstanceID   int64
-	TemplateName string
+	InstanceID     int64
+	InstanceStatus string
+	TemplateName   string
 
 	AssignmentID int64
 	Status       string
@@ -115,6 +115,7 @@ func (r *EvaluationRepository) GetBatchTargets(
 
         COALESCE(pos.name_th, '') AS target_position,
 		ei.id AS instance_id,
+		ei.status AS instance_status,
 		ei.template_name,
 
 		ea.id AS assignment_id,
@@ -140,11 +141,17 @@ func (r *EvaluationRepository) GetBatchTargets(
 		AND eia.target_id = et.id
 
 	WHERE ei.batch_id = $1
+	  AND EXISTS (
+		SELECT 1
+		FROM evaluation_assignments access_assignment
+		WHERE access_assignment.instance_id = ei.id
+		  AND access_assignment.evaluator_id = $2
+	  )
 
 	ORDER BY et.user_id, ei.id, ea.evaluator_id
 	`
 
-	rows, err := db.DB.Query(ctx, query, batchID)
+	rows, err := db.DB.Query(ctx, query, batchID, currentUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -160,6 +167,7 @@ func (r *EvaluationRepository) GetBatchTargets(
 			&row.Name,
 			&row.Position,
 			&row.InstanceID,
+			&row.InstanceStatus,
 			&row.TemplateName,
 			&row.AssignmentID,
 			&row.Status,
@@ -187,8 +195,8 @@ func groupBatchTargets(
 ) []evaluationModels.BatchTargetResponse {
 
 	targetIndex := make(map[int64]int)
-	instanceIndex := make(map[int64]map[int64]int)              // userID -> instanceID -> idx ใน Instances
-	attachSeen := make(map[int64]map[int64]map[int64]bool)      // userID -> instanceID -> attachmentID -> seen
+	instanceIndex := make(map[int64]map[int64]int)         // userID -> instanceID -> idx ใน Instances
+	attachSeen := make(map[int64]map[int64]map[int64]bool) // userID -> instanceID -> attachmentID -> seen
 
 	result := make([]evaluationModels.BatchTargetResponse, 0)
 
@@ -215,10 +223,11 @@ func groupBatchTargets(
 
 		if !hasInstance {
 			target.Instances = append(target.Instances, evaluationModels.TargetInstanceStatus{
-				InstanceID:    row.InstanceID,
-				TemplateName:  row.TemplateName,
-				AttachmentIDs: []int64{},
-				Evaluators:    []evaluationModels.EvaluatorStatus{},
+				InstanceID:     row.InstanceID,
+				InstanceStatus: row.InstanceStatus,
+				TemplateName:   row.TemplateName,
+				AttachmentIDs:  []int64{},
+				Evaluators:     []evaluationModels.EvaluatorStatus{},
 			})
 
 			iIdx = len(target.Instances) - 1
@@ -280,8 +289,8 @@ func (r *EvaluationRepository) GetAllTasks(
 		) AS completed_target,
 
 		CASE
-			WHEN bool_and(ei.status = 'closed') THEN 'closed'
-			WHEN bool_or(ei.status = 'open') THEN 'open'
+			WHEN bool_and(ei.status = 'CLOSED') THEN 'closed'
+			WHEN bool_or(ei.status = 'OPEN') THEN 'open'
 			ELSE 'draft'
 		END AS status
 

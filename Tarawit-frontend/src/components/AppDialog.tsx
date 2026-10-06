@@ -44,7 +44,7 @@ export default function AppDialog({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} variant="contained" color="warning">
+        <Button onClick={onClose} variant="contained" color="primary">
           {confirmText}
         </Button>
       </DialogActions>

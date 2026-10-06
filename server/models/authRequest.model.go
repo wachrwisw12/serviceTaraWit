@@ -6,8 +6,9 @@ type AuthRequest struct {
 	Password string `json:"password"`
 }
 type AuthResponse struct {
-	Token string `json:"token"`
-	User  User   `json:"user"`
+	Token        string `json:"token"`         // access token (อายุสั้น ~1 ชม.)
+	RefreshToken string `json:"refresh_token"` // refresh token (30 วัน, ใช้ต่ออายุ)
+	User         User   `json:"user"`
 }
 type User struct {
 	ID            int64          `json:"id" db:"id"`
@@ -16,11 +17,14 @@ type User struct {
     Position       string      `json:"position"`
 	FirstName     *string       `json:"first_name,omitempty" db:"first_name"`
 	LastName      *string       `json:"last_name,omitempty" db:"last_name"`
-    Phone         *string       `json:"phone,omitempty `
+    Phone         *string       `json:"phone,omitempty"`
 	IsActive      bool          `json:"is_active"`
 	Email         *string      `json:"email,omitempty" db:"email"`
+    AvatarURL     *string      `json:"avatar_url,omitempty" db:"avatar_url"`
     PersonTypeCode string `json:"person_type_code"`
 	PersonTypeName string `json:"person_type_name"`
+    Prefixes      string       `json:"prefixes"`
+    PrefixCode    string       `json:"prefix_code"`
 	Roles         []UserRole   `json:"roles"`
 	Permissions   []Permission `json:"permissions"`
 }

@@ -1,9 +1,8 @@
-cat <<EOF > .gitignore
 # env
 .env
-docker-compose.yml
 .env.*
 !.env.example
+docker-compose.yml
 
 # node
 node_modules/
@@ -13,7 +12,14 @@ bin/
 *.exe
 *.out
 
+# build artifacts
+dist/
+Tarawit-frontend/dev-dist/
+server/tmp/
+
+# uploaded files (avatars, attachments)
+storage/
+backups/
+
 # os
 .DS_Store
-EOF
-

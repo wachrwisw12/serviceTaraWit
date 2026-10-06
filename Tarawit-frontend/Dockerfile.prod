@@ -1,0 +1,14 @@
+FROM node:24-alpine AS builder
+
+WORKDIR /src/Tarawit-frontend
+
+COPY Tarawit-frontend/package.json Tarawit-frontend/package-lock.json ./
+RUN npm ci
+
+COPY Tarawit-frontend/ ./
+RUN npm run build
+
+FROM nginx:alpine
+
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /src/dist/ /usr/share/nginx/html/

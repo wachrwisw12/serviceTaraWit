@@ -1,10 +1,15 @@
+import { useNavigate } from "react-router-dom";
+
+import { useAppSelector } from "../../../store/hooks";
+
 type Accent = "emerald" | "blue" | "amber" | "rose";
 
 interface QuickActionItem {
   label: string;
   icon: React.ReactNode;
   accent: Accent;
-  onClick?: () => void;
+  path: string;
+  permission: string;
 }
 
 function TemplateIcon() {
@@ -51,10 +56,10 @@ const ACCENT_STYLES: Record<
   { iconBg: string; iconText: string; hoverBg: string; hoverBorder: string }
 > = {
   emerald: {
-    iconBg: "bg-emerald-50",
-    iconText: "text-emerald-600",
-    hoverBg: "group-hover:bg-emerald-50/60",
-    hoverBorder: "group-hover:border-emerald-200",
+    iconBg: "bg-primary/10",
+    iconText: "text-primary-dark",
+    hoverBg: "group-hover:bg-primary/10",
+    hoverBorder: "group-hover:border-primary/30",
   },
   blue: {
     iconBg: "bg-blue-50",
@@ -77,25 +82,64 @@ const ACCENT_STYLES: Record<
 };
 
 const actions: QuickActionItem[] = [
-  { label: "สร้างแม่แบบ", icon: <TemplateIcon />, accent: "emerald" },
-  { label: "สร้างการประเมิน", icon: <AssessmentIcon />, accent: "blue" },
-  { label: "นำเข้าบุคลากร", icon: <ImportIcon />, accent: "amber" },
-  { label: "รายงาน", icon: <ReportIcon />, accent: "rose" },
+  {
+    label: "สร้างแม่แบบ",
+    icon: <TemplateIcon />,
+    accent: "emerald",
+    path: "/evaluation/templates",
+    permission: "template.view",
+  },
+  {
+    label: "สร้างการประเมิน",
+    icon: <AssessmentIcon />,
+    accent: "blue",
+    path: "/evaluation/instance/create",
+    permission: "instance.create",
+  },
+  {
+    label: "นำเข้าบุคลากร",
+    icon: <ImportIcon />,
+    accent: "amber",
+    path: "/personnel/create",
+    permission: "personnel.create",
+  },
+  {
+    label: "รายงาน",
+    icon: <ReportIcon />,
+    accent: "rose",
+    path: "/reports",
+    permission: "report.view",
+  },
 ];
 
 export default function QuickAction() {
-  return (
-    <div className="rounded-xl border border-gray-100 bg-white shadow-sm p-6">
-      <h3 className="font-semibold text-gray-900 mb-5">เมนูลัด</h3>
+  const navigate = useNavigate();
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {actions.map(({ label, icon, accent, onClick }) => {
+  const permissionList = useAppSelector(
+    (state) =>
+      new Set(state.auth.user?.permissions.map((p) => p.permission_name) ?? []),
+  );
+
+  const visible = actions.filter(
+    (action) => !action.permission || permissionList.has(action.permission),
+  );
+
+  if (visible.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+      <h3 className="mb-5 font-semibold text-gray-900">เมนูลัด</h3>
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {visible.map(({ label, icon, accent, path }) => {
           const styles = ACCENT_STYLES[accent];
           return (
             <button
               key={label}
-              onClick={onClick}
-              className={`group flex flex-col items-center justify-center gap-2.5 rounded-lg border border-gray-100 h-28 text-gray-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${styles.hoverBg} ${styles.hoverBorder}`}
+              onClick={() => navigate(path)}
+              className={`group flex h-28 flex-col items-center justify-center gap-2.5 rounded-lg border border-gray-100 text-gray-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${styles.hoverBg} ${styles.hoverBorder}`}
             >
               <span
                 className={`flex h-10 w-10 items-center justify-center rounded-full transition-transform group-hover:scale-105 ${styles.iconBg} ${styles.iconText}`}

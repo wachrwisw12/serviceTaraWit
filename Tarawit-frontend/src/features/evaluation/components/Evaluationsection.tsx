@@ -19,9 +19,9 @@ import {
 const STATUS_STYLES = {
   closed: {
     label: "เสร็จสิ้น",
-    badge: "bg-[#2fae60]/10 text-[#218a4a]",
+    badge: "bg-primary/10 text-primary-dark",
     icon: CheckCircle2,
-    bar: "bg-[#2fae60]",
+    bar: "bg-primary",
   },
 
   open: {
@@ -69,7 +69,7 @@ function EvaluationTaskCard({
     <article className="rounded-xl border border-gray-200 bg-white p-5 transition hover:shadow-sm">
       <div className="flex items-start justify-between">
         <div className="flex gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#2fae60]/10 text-[#2fae60]">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <ClipboardList size={20} />
           </div>
 
@@ -92,7 +92,7 @@ function EvaluationTaskCard({
         <button
           type="button"
           onClick={() => onOpen(item.batch_id)}
-          className="rounded-lg bg-[#2fae60] px-3 py-2 text-sm text-white hover:bg-[#218a4a]"
+          className="rounded-lg bg-primary px-3 py-2 text-sm text-white hover:bg-primary-dark"
         >
           ดูรายชื่อ
         </button>
@@ -121,7 +121,7 @@ function EvaluationTaskCard({
         <div className="text-center">
           <p className="text-xs text-gray-500">เสร็จแล้ว</p>
 
-          <p className="text-xl font-bold text-green-600">{completed}</p>
+          <p className="text-xl font-bold text-primary-dark">{completed}</p>
         </div>
 
         <div className="text-center">
@@ -204,8 +204,8 @@ export default function EvaluationSection() {
             py-1.5
             text-sm
             font-medium
-            text-[#2fae60]
-            hover:bg-[#2fae60]/10
+            text-primary
+            hover:bg-primary/10
           "
         >
           ดูทั้งหมด

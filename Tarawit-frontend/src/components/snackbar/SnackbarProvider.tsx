@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import Snackbar, { type SnackbarType } from "./Snackbar";
 import { SnackbarContext } from "./SnackbarContext";
@@ -41,6 +41,23 @@ export default function SnackbarProvider({
       open: false,
     }));
   };
+
+  // ฟัง event "api-error" จาก axios interceptor
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as {
+        status?: number;
+        message?: string;
+      };
+      showSnackbar(
+        detail?.message ?? "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์",
+        "error",
+        5000,
+      );
+    };
+    window.addEventListener("api-error", handler);
+    return () => window.removeEventListener("api-error", handler);
+  }, [showSnackbar]);
 
   return (
     <SnackbarContext.Provider

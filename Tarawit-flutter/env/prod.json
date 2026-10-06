@@ -1,0 +1,5 @@
+{
+  "APP_ENV": "prod",
+  "API_BASE_URL": "https://folio-me.com/api",
+  "ENABLE_NETWORK_LOGS": false
+}

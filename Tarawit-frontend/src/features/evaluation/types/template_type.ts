@@ -44,12 +44,44 @@ export interface TemplateDetailResponse {
   id: number;
   code: string;
   template_name: string;
+  description: string;
   evaluation_target_id: EvaluationTarget;
   versions: number;
   status: string;
   template_type: TemplateType;
+  fields: TemplateFieldInput[];
   sections: SectionResponse[];
 }
+
+export type TemplateFieldInput = {
+  label: string;
+  field_type: "TEXT" | "TEXTAREA" | "NUMBER" | "DATE";
+  placeholder: string;
+  required: boolean;
+};
+
+export type TemplateQuestionInput = {
+  question: string;
+  question_type: "SCALE" | "TEXT" | "CHOICE";
+  required: boolean;
+  choices: { label: string; score: number }[];
+};
+
+export type TemplateSectionInput = {
+  name: string;
+  description: string;
+  questions: TemplateQuestionInput[];
+};
+
+export type TemplateWritePayload = {
+  code: string;
+  template_name: string;
+  description: string;
+  evaluation_target_id: EvaluationTarget;
+  template_type: TemplateType;
+  fields: TemplateFieldInput[];
+  sections: TemplateSectionInput[];
+};
 
 export interface Member {
   id: string;

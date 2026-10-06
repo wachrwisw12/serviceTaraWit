@@ -18,7 +18,7 @@ import {
   startEvaluationInstance,
 } from "../api/createdEvaluationSlice";
 
-const ACCENT = "#2fae60";
+const ACCENT = "var(--color-primary)";
 
 export default function MyCreatedEvaluationsPage() {
   const dispatch = useAppDispatch();
@@ -33,14 +33,20 @@ export default function MyCreatedEvaluationsPage() {
     dispatch(fetchMyCreatedEvaluations());
   }, [dispatch]);
 
-  const handleStart = async (instanceId: number, name: string) => {
+  const handleStart = async (
+    instanceId: number,
+    name: string,
+    isSurvey: boolean,
+  ) => {
     const confirmed = await confirm({
       type: "warning",
-      title: "เริ่มการประเมิน?",
-      message:
-        `คุณกำลังจะเปิด "${name}"\n` +
-        "หลังจากเริ่มแล้ว ผู้ประเมินจะสามารถเข้ามาให้คะแนนได้",
-      confirmText: "เริ่มการประเมิน",
+      title: isSurvey ? "เริ่มแบบสอบถาม?" : "เริ่มการนิเทศ?",
+      message: isSurvey
+        ? `คุณกำลังจะเปิด "${name}"\n` +
+          "หลังจากเริ่มแล้ว ผู้ตอบแบบสอบถามจะเข้ามาตอบได้"
+        : `คุณกำลังจะเปิด "${name}"\n` +
+          "หลังจากเริ่มแล้ว ผู้ประเมินจะสามารถเข้ามาให้คะแนนได้",
+      confirmText: isSurvey ? "เริ่มแบบสอบถาม" : "เริ่มการนิเทศ",
       cancelText: "ยกเลิก",
     });
 
@@ -51,8 +57,10 @@ export default function MyCreatedEvaluationsPage() {
 
       await alert({
         type: "success",
-        title: "เริ่มการประเมินแล้ว",
-        message: "ผู้ประเมินสามารถเข้ามาดำเนินการประเมินได้แล้ว",
+        title: isSurvey ? "เริ่มแบบสอบถามแล้ว" : "เริ่มการนิเทศแล้ว",
+        message: isSurvey
+          ? "ผู้ตอบแบบสอบถามสามารถเข้ามาตอบได้แล้ว"
+          : "ผู้นิเทศสามารถเข้ามาดำเนินการนิเทศได้แล้ว",
       });
     } catch (error) {
       await alert({
@@ -76,10 +84,10 @@ export default function MyCreatedEvaluationsPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            การประเมินที่ฉันสร้าง
+            การนิเทศที่ฉันสร้าง
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            จัดการรอบการประเมินและติดตามความคืบหน้า
+            จัดการรอบการนิเทศและติดตามความคืบหน้า
           </p>
         </div>
 
@@ -97,7 +105,7 @@ export default function MyCreatedEvaluationsPage() {
           style={{ backgroundColor: ACCENT }}
         >
           <Plus className="h-4 w-4" />
-          สร้างการประเมิน
+          สร้างการนิเทศ
         </Link>
       </div>
 
@@ -106,8 +114,7 @@ export default function MyCreatedEvaluationsPage() {
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
-                <th className="px-5 py-3 font-medium text-gray-500">
-                  แม่แบบ / รอบการประเมิน
+                <th className="px-5 py-3 font-medium text-gray-500">                   แม่แบบ / รอบการนิเทศ
                 </th>
                 <th className="px-5 py-3 font-medium text-gray-500">
                   ปีการศึกษา
@@ -133,6 +140,12 @@ export default function MyCreatedEvaluationsPage() {
               {items.map((item) => {
                 const isStarting = startingId === item.id;
 
+                // ฐานข้อมูลเก็บสถานะเป็นตัวพิมพ์ใหญ่ (DRAFT/OPEN/CLOSED)
+                const itemStatus = item.status.toLowerCase() as
+                  | "draft"
+                  | "open"
+                  | "closed";
+
                 const progressPct =
                   item.assignment_count > 0
                     ? Math.round(
@@ -147,14 +160,27 @@ export default function MyCreatedEvaluationsPage() {
                   >
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2.5">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50">
-                          <ClipboardCheck className="h-4.5 w-4.5 text-emerald-600" />
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                          <ClipboardCheck className="h-4.5 w-4.5 text-primary-dark" />
                         </span>
 
                         <div className="min-w-0">
-                          <p className="truncate font-semibold text-gray-900">
-                            {item.template_name}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="truncate font-semibold text-gray-900">
+                              {item.template_name}
+                            </p>
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                                item.template_type === "SURVEY"
+                                  ? "bg-sky-50 text-sky-700"
+                                  : "bg-primary/10 text-primary-dark"
+                              }`}
+                            >
+                              {item.template_type === "SURVEY"
+                                ? "แบบสอบถาม"
+                                : "แบบประเมิน"}
+                            </span>
+                          </div>
                           <p className="truncate text-xs text-gray-500">
                             {item.instance_name}
                           </p>
@@ -185,7 +211,7 @@ export default function MyCreatedEvaluationsPage() {
                     </td>
 
                     <td className="px-5 py-4">
-                      {item.status !== "draft" ? (
+                      {itemStatus !== "draft" ? (
                         <div className="w-32">
                           <div className="mb-1 flex justify-between text-xs text-gray-500">
                             <span>{progressPct}%</span>
@@ -212,13 +238,13 @@ export default function MyCreatedEvaluationsPage() {
                     </td>
 
                     <td className="whitespace-nowrap px-5 py-4">
-                      <StatusBadge status={item.status} />
+                      <StatusBadge status={itemStatus} />
                     </td>
 
                     <td className="whitespace-nowrap px-5 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
+                        <Link
+                          to={`/evaluation/my-created/${item.id}`}
                           title="ดูรายละเอียด"
                           className="
                             flex items-center gap-1.5
@@ -229,14 +255,18 @@ export default function MyCreatedEvaluationsPage() {
                         >
                           <Eye className="h-3.5 w-3.5" />
                           ดูรายละเอียด
-                        </button>
+                        </Link>
 
-                        {item.status === "draft" && (
+                        {itemStatus === "draft" && (
                           <button
                             type="button"
                             disabled={isStarting}
                             onClick={() =>
-                              handleStart(item.id, item.template_name)
+                              handleStart(
+                                item.id,
+                                item.template_name,
+                                item.template_type === "SURVEY",
+                              )
                             }
                             className="
                               flex items-center gap-1.5
@@ -250,23 +280,26 @@ export default function MyCreatedEvaluationsPage() {
                             style={{ backgroundColor: ACCENT }}
                           >
                             <Play className="h-3.5 w-3.5" />
-                            {isStarting ? "กำลังเริ่ม..." : "เริ่มการประเมิน"}
+                            {isStarting
+                              ? "กำลังเริ่ม..."
+                              : item.template_type === "SURVEY"
+                                ? "เริ่มแบบสอบถาม"                                 : "เริ่มการนิเทศ"}
                           </button>
                         )}
 
-                        {item.status === "open" && (
-                          <button
-                            type="button"
+                        {itemStatus === "open" && (
+                          <Link
+                            to={`/evaluation/my-created/${item.id}`}
                             className="
                               rounded-lg
-                              bg-gray-900
+                              bg-primary
                               px-3 py-1.5
                               text-xs font-medium
                               text-white
                             "
                           >
                             ดูความคืบหน้า
-                          </button>
+                          </Link>
                         )}
                       </div>
                     </td>
@@ -295,7 +328,7 @@ export default function MyCreatedEvaluationsPage() {
 function StatusBadge({ status }: { status: "draft" | "open" | "closed" }) {
   if (status === "open") {
     return (
-      <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+      <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
         กำลังประเมิน
       </span>
     );
@@ -303,14 +336,14 @@ function StatusBadge({ status }: { status: "draft" | "open" | "closed" }) {
 
   if (status === "closed") {
     return (
-      <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+      <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary-dark">
         ปิดแล้ว
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+    <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
       ฉบับร่าง
     </span>
   );

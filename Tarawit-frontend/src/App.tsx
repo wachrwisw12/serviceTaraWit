@@ -2,9 +2,16 @@ import { useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
 import { verifyTokenThunk } from "./features/auth/authSlice";
-import router from "./routes/router";
+import router from "./route/router";
 import SplashScreen from "./components/SplashScreen";
 import GlobalLoader from "./components/GlobalLoader";
+import { SystemSettingsProvider } from "./features/setting/SystemSettingsContext";
+import { useDynamicMeta } from "./hooks/useDynamicMeta";
+
+function AppInner() {
+  useDynamicMeta();
+  return null;
+}
 
 function App() {
   const dispatch = useAppDispatch();
@@ -34,14 +41,19 @@ function App() {
   }, [dispatch]);
 
   if (status === "checking" || showSplash) {
-    return <SplashScreen />;
+    return (
+      <SystemSettingsProvider>
+        <SplashScreen />
+      </SystemSettingsProvider>
+    );
   }
 
   return (
-    <>
+    <SystemSettingsProvider>
+      <AppInner />
       <RouterProvider router={router} />
       <GlobalLoader show={globalLoading} />
-    </>
+    </SystemSettingsProvider>
   );
 }
 export default App;

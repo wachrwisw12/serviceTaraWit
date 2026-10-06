@@ -34,7 +34,7 @@ export function TargetRow({
     <>
       <tr
         className={`border-b border-gray-100 hover:bg-gray-50 ${
-          forceOpen ? "bg-emerald-50/40" : ""
+          forceOpen ? "bg-primary/5" : ""
         }`}
       >
         <td className="px-4 py-4">
@@ -62,7 +62,7 @@ export function TargetRow({
               <div
                 className="
 h-full
-bg-[#2fae60]
+bg-primary
 "
                 style={{
                   width: `${percent}%`,
@@ -78,7 +78,7 @@ bg-[#2fae60]
 
         <td className="px-4">
           {percent === 100 ? (
-            <span className="text-xs text-green-600">ครบแล้ว</span>
+            <span className="text-xs text-primary-dark">ครบแล้ว</span>
           ) : (
             <span className="text-xs text-orange-500">กำลังดำเนินการ</span>
           )}

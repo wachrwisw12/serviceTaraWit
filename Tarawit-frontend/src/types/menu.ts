@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import type { PermissionType } from "../store/hooks/permission";
 
 export type IconProps = {
   fontSize?: "small" | "medium" | "large";
@@ -9,7 +10,8 @@ export interface MenuItem {
   id: string;
   label: string;
   path: string;
-  permission?: string;
+  permission?: PermissionType;
+  module?: string;
   icon?: ComponentType<IconProps>;
   children?: MenuItem[];
 }

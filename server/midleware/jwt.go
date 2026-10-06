@@ -1,8 +1,10 @@
 package middlewares
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"tarawitApi/config"
 	"time"
@@ -41,15 +43,35 @@ func JWTMiddleware(c *fiber.Ctx) error {
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return c.Next()
+		return fiber.ErrUnauthorized
 	}
+
+	// แปลง sub เป็น int64 อย่างปลอดภัย (ไม่ panic ถ้าเป็น string/number)
+	userID, err := safeSubToInt64(claims["sub"])
+	if err != nil {
+		return fiber.ErrUnauthorized
+	}
+
 	// เก็บข้อมูลไว้ใช้ใน Handler
-c.Locals("user_id", int64(claims["sub"].(float64)))
-c.Locals("username", claims["username"])
-c.Locals("roles", claims["roles"])
-c.Locals("permissions", claims["permissions"])
+	c.Locals("user_id", userID)
+	c.Locals("username", claims["username"])
+	c.Locals("roles", claims["roles"])
+	c.Locals("permissions", claims["permissions"])
 	// ✅ ผ่าน = token ถูก + ยังไม่หมดอายุ
 	return c.Next()
+}
+
+func safeSubToInt64(v interface{}) (int64, error) {
+	switch n := v.(type) {
+	case float64:
+		return int64(n), nil
+	case json.Number:
+		return n.Int64()
+	case string:
+		return strconv.ParseInt(n, 10, 64)
+	default:
+		return 0, fmt.Errorf("invalid sub claim type: %T", v)
+	}
 }
 
 // func OptionalJWT() fiber.Handler {
@@ -104,12 +126,15 @@ func GenerateJWT(
         return "", errors.New("jwt private key is nil")
     }
 
+    // access token อายุสั้น (1 ชม.) — ต่ออายุผ่าน refresh token (/auth/refresh)
+    // ไม่ใช้ sliding renewal ใน /auth/me แล้ว เนื่องจากมี refresh token เป็นตัวหลัก
     claims := jwt.MapClaims{
         "sub": id,
         "username": username,
         "roles": roles,
         "permissions": permissions,
-        "exp": time.Now().Add(time.Hour * 24).Unix(),
+        "iat": time.Now().Unix(),
+        "exp": time.Now().Add(time.Hour).Unix(),
     }
 
     token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
@@ -125,3 +150,4 @@ func GetCurrentUserID(c *fiber.Ctx) (int64, error) {
 
 	return userID, nil
 }
+

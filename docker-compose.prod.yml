@@ -1,0 +1,108 @@
+services:
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Tarawit-frontend/Dockerfile.prod
+    container_name: tarawit-nginx
+    restart: always
+
+    ports:
+      - "80:80"
+
+    depends_on:
+      - api
+
+    networks:
+      - tarawit-network
+
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.prod
+
+    container_name: tarawit-api
+
+    restart: always
+
+    environment:
+      APP_ENV: prod
+      DB_HOST: db
+      DB_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      DB_SSLMODE: disable
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:?CORS_ALLOW_ORIGINS is required}
+      TRUSTED_PROXIES: 172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
+
+    expose:
+      - "8000"
+
+    volumes:
+      - uploads_data:/app/storage
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - tarawit-network
+
+
+  db:
+    image: postgres:15
+
+    container_name: tarawit-postgres
+
+    restart: always
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+
+    ports:
+      - "127.0.0.1:5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - tarawit-network
+
+  migrate:
+    build:
+      context: .
+      dockerfile: server/Dockerfile.migrate
+    profiles: ["tools"]
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      DB_SSLMODE: disable
+      MIGRATION_CONFIRM_DB: ${MIGRATION_CONFIRM_DB:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - tarawit-network
+
+
+volumes:
+  postgres_data:
+  uploads_data:
+
+
+networks:
+  tarawit-network:
+    driver: bridge

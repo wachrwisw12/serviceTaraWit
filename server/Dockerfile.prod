@@ -1,0 +1,18 @@
+FROM alpine:3.22
+
+WORKDIR /app
+
+RUN apk add --no-cache ca-certificates tzdata \
+    && mkdir -p /app/storage
+
+# Binary ต้องถูก cross-compile สำหรับ linux/arm64 จากเครื่อง dev ก่อน
+# Docker build context คือ server/ และ image นี้ไม่ compile source code
+COPY tarawit-api-arm64 ./tarawit-api
+
+COPY keys ./keys
+
+RUN chmod 0755 ./tarawit-api
+
+EXPOSE 8000
+
+ENTRYPOINT ["./tarawit-api"]

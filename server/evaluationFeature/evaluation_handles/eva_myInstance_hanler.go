@@ -33,9 +33,9 @@ func (h *EvaluationHandler) GetMyinstance(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 
-// GetMyInstanceDetail คืนรายละเอียดของ instance เดียว สำหรับ user ที่เป็น target ของ instance นั้นเท่านั้น
+// GetMyInstanceDetail คืนรายละเอียดของ target ที่ผู้ใช้เป็นเจ้าตัวหรือเป็นผู้ลงนามของ instance
 func (h *EvaluationHandler) GetMyInstanceDetail(c *fiber.Ctx) error {
-   
+
 	userID, ok := c.Locals("user_id").(int64)
 	if !ok {
 		log.Println("❌ user_id not found in context or wrong type")
@@ -54,7 +54,19 @@ func (h *EvaluationHandler) GetMyInstanceDetail(c *fiber.Ctx) error {
 		})
 	}
 
-	result, err := h.service.GetMyInstanceDetail(userID, instanceID)
+	var targetID *int64
+	if rawTargetID := c.Query("target_id"); rawTargetID != "" {
+		parsedTargetID, parseErr := strconv.ParseInt(rawTargetID, 10, 64)
+		if parseErr != nil || parsedTargetID <= 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"success": false,
+				"message": "รหัสผู้ถูกประเมินไม่ถูกต้อง",
+			})
+		}
+		targetID = &parsedTargetID
+	}
+
+	result, err := h.service.GetMyInstanceDetail(userID, instanceID, targetID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -75,7 +87,7 @@ func (h *EvaluationHandler) GetMyInstanceDetail(c *fiber.Ctx) error {
 }
 
 func (h *EvaluationHandler) UpdateInstanceFields(c *fiber.Ctx) error {
-
+	userID := c.Locals("user_id").(int64)
 
 	instanceID, err := strconv.ParseInt(
 		c.Params("id"),
@@ -86,48 +98,42 @@ func (h *EvaluationHandler) UpdateInstanceFields(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(400).JSON(
 			fiber.Map{
-				"message":"invalid instance id",
+				"message": "invalid instance id",
 			},
 		)
 	}
 
-
 	var req evaluationModels.UpdateInstanceFieldsRequest
-
 
 	if err := c.BodyParser(&req); err != nil {
 
 		return c.Status(400).JSON(
 			fiber.Map{
-				"message":"invalid body",
+				"message": "invalid body",
 			},
 		)
 
 	}
 
-
-
 	err = h.service.UpdateInstanceFields(
+		userID,
 		instanceID,
 		req.Fields,
 	)
 
-
 	if err != nil {
 
-		return c.Status(500).JSON(
+		return c.Status(fiber.StatusForbidden).JSON(
 			fiber.Map{
-				"message":err.Error(),
+				"message": err.Error(),
 			},
 		)
 
 	}
 
-
-
 	return c.JSON(
 		fiber.Map{
-			"message":"updated",
+			"message": "updated",
 		},
 	)
 }

@@ -13,11 +13,11 @@ const STATUS_CONFIG: Record<
 > = {
   ACTIVE: {
     label: "Active",
-    className: "bg-green-100 text-green-700",
+    className: "bg-primary/10 text-primary-dark",
   },
   DRAFT: {
     label: "Draft",
-    className: "bg-yellow-100 text-yellow-700",
+    className: "bg-gray-100 text-gray-600",
   },
   INACTIVE: {
     label: "Inactive",

@@ -29,6 +29,14 @@ func (r *UserRepository) GetAllUser() ([]models.User, error) {
 
     pst.name_th AS position_name,
 
+    u.email,
+    u.is_active,
+    u.phone,
+    u.avatar_url,
+
+    pf.name_th AS prefixes,
+    pf.code AS prefix_code,
+
     COALESCE(
         jsonb_agg(
             DISTINCT jsonb_build_object(
@@ -47,6 +55,9 @@ LEFT JOIN person_types pt
 LEFT JOIN positions pst 
     ON pst.id = u.position_id
 
+LEFT JOIN prefixes pf
+    ON pf.id = u.prefix_id
+
 LEFT JOIN user_roles ur
     ON ur.user_id = u.id
 
@@ -61,7 +72,13 @@ GROUP BY
     u.last_name,
     pt.name_th,
     pt.code,
-    pst.name_th`
+    pst.name_th,
+    u.email,
+    u.is_active,
+    u.phone,
+    u.avatar_url,
+    pf.name_th,
+    pf.code`
 	rows, err := db.DB.Query(context.Background(), query)
 	if err != nil {
 		return nil, err
@@ -82,6 +99,12 @@ GROUP BY
     &user.PersonTypeName,
     &user.PersonTypeCode,
     &user.Position,
+    &user.Email,
+    &user.IsActive,
+    &user.Phone,
+    &user.AvatarURL,
+    &user.Prefixes,
+    &user.PrefixCode,
     &user.Roles,
 )
 		if err != nil {
@@ -122,6 +145,7 @@ query := `
     u.last_name,
     u.phone,
     u.is_active,
+    u.avatar_url,
 
     pt.id AS person_type_id,
     pt.name_th AS person_type_name,
@@ -183,6 +207,7 @@ GROUP BY
     u.last_name,
     u.phone,
     u.is_active,
+    u.avatar_url,
     pt.id,
     pt.name_th;
 	`
@@ -203,6 +228,7 @@ var permissionsJSON []byte
 	&user.LastName,
 	&user.Phone,
 	&user.IsActive,
+	&user.AvatarURL,
 	&user.PersonTypeID,
 	&user.PersonTypeName,
 	&rolesJSON,

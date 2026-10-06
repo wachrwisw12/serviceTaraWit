@@ -16,28 +16,40 @@ export default function AttachmentViewer({
 }: Props) {
   const [active, setActive] = useState(0);
   const [file, setFile] = useState<{ url: string; type: string } | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     setActive(0);
+    setError(false);
   }, [instanceId, targetId]);
 
   useEffect(() => {
     if (!attachmentIds.length) {
       setFile(null);
+      setError(false);
       return;
     }
 
     let cancelled = false;
     let objectUrl: string | null = null;
 
-    openAttachment(instanceId, targetId, attachmentIds[active]).then((f) => {
-      if (cancelled) {
-        URL.revokeObjectURL(f.url);
-        return;
-      }
-      objectUrl = f.url;
-      setFile(f);
-    });
+    setFile(null);
+    setError(false);
+
+    openAttachment(instanceId, targetId, attachmentIds[active])
+      .then((f) => {
+        if (cancelled) {
+          URL.revokeObjectURL(f.url);
+          return;
+        }
+        objectUrl = f.url;
+        setFile(f);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError(true);
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -50,6 +62,14 @@ export default function AttachmentViewer({
     return (
       <div className="flex h-full items-center justify-center text-sm text-gray-400">
         ไม่มีเอกสารแนบ
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-gray-400">
+        ไม่สามารถโหลดไฟล์ได้ กรุณาลองใหม่อีกครั้ง
       </div>
     );
   }
@@ -72,7 +92,7 @@ export default function AttachmentViewer({
               type="button"
               onClick={() => setActive(i)}
               className={`h-2 w-2 rounded-full transition ${
-                i === active ? "bg-[#2fae60]" : "bg-gray-300"
+                i === active ? "bg-primary" : "bg-gray-300"
               }`}
               aria-label={`เอกสารแนบ ${i + 1}`}
             />

@@ -10,6 +10,12 @@ import batchTargetReducer from "../features/evaluation/api/batchtargetSlice.ts";
 import evaluatorSlice from "../features/evaluation/api/EvaluatorSlice.ts";
 import roleSlice from "../features/role/api/RoleSlice.ts";
 import createdEvaluationReducer from "../features/evaluation/api/createdEvaluationSlice.ts";
+import attendanceReducer from "../features/attendance/api/attendanceSlice.ts";
+import personnelReducer from "../features/personnel/api/personnelSlice.ts";
+import settingReducer from "../features/setting/api/settingSlice.ts";
+import reportReducer from "../features/report/api/reportSlice.ts";
+import iqaReducer from "../features/iqa/api/iqaSlice.ts";
+import evaluationSummaryReducer from "../features/evaluation/api/evaluationSummarySlice.ts";
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -22,8 +28,15 @@ export const store = configureStore({
     evaluator: evaluatorSlice,
     roleSlice: roleSlice,
     createdEvaluation: createdEvaluationReducer,
+    attendance: attendanceReducer,
+    personnel: personnelReducer,
+    setting: settingReducer,
+    report: reportReducer,
+    iqa: iqaReducer,
+    evaluationSummary: evaluationSummaryReducer,
     ui: uiReducer,
   },
+  devTools: import.meta.env.DEV, // ปิด Redux DevTools ใน production
 });
 
 export type RootState = ReturnType<typeof store.getState>;

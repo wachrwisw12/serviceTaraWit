@@ -5,6 +5,7 @@ import type {
   EvaluationInstanceState,
   RoundCountArgs,
 } from "../types/instance_type";
+import type { TemplateType } from "../types/template_type";
 
 /* ================== TYPES ================== */
 
@@ -17,9 +18,16 @@ export type CreateEvaluationInstancePayload = {
   instance_name: string;
   academic_year: number;
   round: string;
-  instance_type: "EVALUATION" | "SURVEY";
+  template_type: TemplateType;
   target_member_ids: string[];
   evaluator_member_ids: string[];
+  evaluator_settings: Array<{
+    user_id: string;
+    can_score: boolean;
+    requires_signature: boolean;
+    signature_order: number;
+    signature_role: string;
+  }>;
   show_score_to_visibility: boolean;
 };
 
@@ -63,7 +71,7 @@ export const fetchEvaluationRoundCount = createAsyncThunk<
           },
         },
       );
-      return res.data.count;
+      return res.data?.count ?? 0;
     } catch {
       return rejectWithValue("ไม่สามารถคำนวณรอบที่ได้");
     }
@@ -100,7 +108,7 @@ export const fetchEvaluationInstances = createAsyncThunk<
     const res = await api.get<EvaluationInstanceListItem[]>(
       "/evaluation/evaluation-instances/list",
     );
-    return res.data;
+    return res.data ?? [];
   } catch {
     return rejectWithValue("ไม่สามารถโหลดรายการการประเมินได้");
   }

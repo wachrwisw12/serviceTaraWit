@@ -43,9 +43,13 @@ export default function ProgressCard() {
 
               <button
                 className="mt-3 rounded-lg border px-4 py-1.5 text-xs font-semibold transition-colors"
-                style={{ borderColor: "#2fae60", color: "#1f8a49" }}
+                style={{
+                  borderColor: "var(--color-primary)",
+                  color: "var(--color-primary-dark)",
+                }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#eafaf0")
+                  (e.currentTarget.style.backgroundColor =
+                    "var(--color-primary-soft)")
                 }
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.backgroundColor = "transparent")

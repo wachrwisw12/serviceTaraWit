@@ -1,0 +1,5 @@
+{
+  "APP_ENV": "dev",
+  "API_BASE_URL": "http://localhost:8000/api",
+  "ENABLE_NETWORK_LOGS": true
+}

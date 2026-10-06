@@ -42,6 +42,7 @@ interface EvaluationFormData {
   academicYear: number;
   targetMembers: Member[];
   evaluatorMembers: Member[];
+  evaluatorSettings: Record<string, { canScore: boolean; requiresSignature: boolean }>;
   showScoreToVisibility: boolean;
 }
 const accentColor = evaluationColor; // สีหลักของระบบประเมิน (ใช้กับวงกลมขั้นตอน, ปุ่ม, แถบความคืบหน้า)
@@ -255,6 +256,7 @@ export default function EvaluationForm() {
     academicYear: CURRENT_ACADEMIC_YEAR,
     targetMembers: [],
     evaluatorMembers: [],
+    evaluatorSettings: {},
     showScoreToVisibility: false,
   });
 
@@ -266,49 +268,57 @@ export default function EvaluationForm() {
     Record<string, RoundInfo>
   >({});
 
-  useEffect(() => {
-    setRoundsByTemplate((prev) => {
-      const next: Record<string, RoundInfo> = {};
-
-      form.templateIds.forEach((id) => {
-        if (prev[id]) {
-          next[id] = prev[id];
-        }
-      });
-
-      return next;
-    });
-  }, [form.templateIds]);
+  /** อัปเดตฟอร์ม — ถ้าเปลี่ยน templateIds จะ sync roundsByTemplate ด้วย
+   *  แทนที่ useEffect cleanup เดิมที่ทำ cascading renders */
   const update = <K extends keyof EvaluationFormData>(
     key: K,
     value: EvaluationFormData[K],
-  ) => setForm((prev) => ({ ...prev, [key]: value }));
+  ) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    if (key === "templateIds") {
+      setRoundsByTemplate((prev) => {
+        const next: Record<string, RoundInfo> = {};
+        (value as string[]).forEach((id) => {
+          next[id] = prev[id] ?? { round: "1", loading: true, error: false };
+        });
+        return next;
+      });
+    }
+  };
 
   // ⬇️ ใหม่: สลับประเภทรายการ — ล้างการเลือก "ผู้ประเมิน" ทิ้งเมื่อเปลี่ยนเป็นแบบสอบถาม
   // เพราะแบบสอบถามไม่มีผู้ประเมินแยก ป้องกันข้อมูลเก่าค้างอยู่เบื้องหลังโดยผู้ใช้ไม่รู้ตัว
+  // + clamp currentStep ให้ไม่เกินจำนวน step ใหม่ (แทน useEffect ที่ทำ cascading renders)
   const handleTemplateTypeChange = (type: TemplateType) => {
+    const newStepCount = type === "SURVEY" ? 3 : 4;
     setForm((prev) => ({
       ...prev,
       templateType: type,
       templateIds: [],
       evaluatorMembers: type === "SURVEY" ? [] : prev.evaluatorMembers,
+      evaluatorSettings: type === "SURVEY" ? {} : prev.evaluatorSettings,
     }));
 
     setRoundsByTemplate({});
+    setCurrentStep((prev) => Math.min(prev, newStepCount - 1));
   };
 
-  // ✅ คำนวณ "รอบที่" อัตโนมัติแยกต่อแม่แบบ
+  // ⬇️ เปลี่ยนปีการศึกษา — reset loading ทุกแม่แบบ (เรียกใน event handler จึง batched ได้)
+  const handleAcademicYearChange = (year: number) => {
+    setForm((prev) => ({ ...prev, academicYear: year }));
+    setRoundsByTemplate((prev) => {
+      const next: Record<string, RoundInfo> = {};
+      Object.keys(prev).forEach((id) => {
+        next[id] = { round: prev[id]?.round ?? "1", loading: true, error: false };
+      });
+      return next;
+    });
+  };
+
+  // ✅ คำนวณ "รอบที่" อัตโนมัติแยกต่อแม่แบบ — เฉพาะ async dispatch เท่านั้น
+  // ไม่เรียก setState synchronous ใน effect body อีกต่อไป (loading ตั้งไว้แล้วใน update/handler)
   useEffect(() => {
     form.templateIds.forEach((templateId) => {
-      setRoundsByTemplate((prev) => ({
-        ...prev,
-        [templateId]: {
-          round: prev[templateId]?.round ?? "1",
-          loading: true,
-          error: false,
-        },
-      }));
-
       dispatch(
         fetchEvaluationRoundCount({
           templateId,
@@ -344,19 +354,23 @@ export default function EvaluationForm() {
       (templates ?? []).filter((t) => form.templateIds.includes(String(t.id))),
     [templates, form.templateIds],
   );
+  const scorerCount = form.evaluatorMembers.filter(
+    (member) => form.evaluatorSettings[member.id]?.canScore ?? true,
+  ).length;
 
   // ⬇️ แก้ไข: validation แยกตามประเภท — แบบสอบถามไม่บังคับเลือกผู้ประเมิน
   const isValid = isSurvey
     ? form.templateIds.length > 0 && form.targetMembers.length > 0
     : form.templateIds.length > 0 &&
       form.targetMembers.length > 0 &&
-      form.evaluatorMembers.length > 0;
+      form.evaluatorMembers.length > 0 &&
+      scorerCount > 0;
 
   // ⬇️ แก้ไข: แบบสอบถาม = ผู้ตอบแต่ละคนตอบเอง (ไม่คูณด้วยผู้ประเมิน)
   const assignmentCount = isSurvey
     ? form.targetMembers.length * form.templateIds.length
     : form.targetMembers.length *
-      form.evaluatorMembers.length *
+      scorerCount *
       form.templateIds.length;
   const isLargeBatch = assignmentCount > 100;
 
@@ -405,6 +419,16 @@ export default function EvaluationForm() {
             evaluator_member_ids: isSurvey
               ? []
               : form.evaluatorMembers.map((m) => m.id),
+            evaluator_settings: isSurvey
+              ? []
+              : form.evaluatorMembers.map((member, index) => ({
+                  user_id: member.id,
+                  can_score: form.evaluatorSettings[member.id]?.canScore ?? true,
+                  requires_signature:
+                    form.evaluatorSettings[member.id]?.requiresSignature ?? true,
+                  signature_order: index + 1,
+                  signature_role: "ผู้ประเมิน",
+                })),
             show_score_to_visibility: form.showScoreToVisibility,
           }),
         ).unwrap();
@@ -457,7 +481,9 @@ export default function EvaluationForm() {
       case "members":
         return isSurvey
           ? form.targetMembers.length > 0
-          : form.targetMembers.length > 0 && form.evaluatorMembers.length > 0;
+          : form.targetMembers.length > 0 &&
+              form.evaluatorMembers.length > 0 &&
+              scorerCount > 0;
       case "visibility":
         return true;
     }
@@ -465,10 +491,7 @@ export default function EvaluationForm() {
 
   const [currentStep, setCurrentStep] = useState(0);
 
-  // เมื่อสลับแบบประเมิน/แบบสอบถามทำให้จำนวน step เปลี่ยน — กันไม่ให้ currentStep ชี้เกินขอบ
-  useEffect(() => {
-    setCurrentStep((prev) => Math.min(prev, stepIds.length - 1));
-  }, [stepIds.length]);
+
 
   const currentStepId = stepIds[currentStep];
   const isLastStep = currentStep === stepIds.length - 1;
@@ -517,7 +540,7 @@ export default function EvaluationForm() {
                 <select
                   value={form.academicYear}
                   onChange={(e) =>
-                    update("academicYear", Number(e.target.value))
+                    handleAcademicYearChange(Number(e.target.value))
                   }
                   className={selectClass}
                   style={{
@@ -597,7 +620,7 @@ export default function EvaluationForm() {
             <p className="text-xs text-gray-400 mb-4">
               {isSurvey
                 ? "แต่ละคนที่เลือกจะได้รับลิงก์ให้ตอบแบบสอบถามด้วยตนเอง"
-                : "ผู้ประเมินทุกคนจะได้รับมอบหมายให้ประเมินเป้าหมายทุกคนที่เลือก ในทุกแม่แบบที่เลือก"}
+                : "เลือกได้แยกกันว่าใครเป็นผู้ลงคะแนน และใครต้องมีช่องลงลายมือชื่อในรายงาน (ต้องมีผู้ลงคะแนนอย่างน้อย 1 คน)"}
             </p>
             <div className="space-y-4">
               <GroupMemberPicker
@@ -616,16 +639,47 @@ export default function EvaluationForm() {
               />
 
               {!isSurvey && (
-                <GroupMemberPicker
-                  label="ผู้ประเมิน"
-                  groups={allGroupsForSelect}
-                  searchMembers={allMembersForSearch}
-                  selectedMembers={form.evaluatorMembers}
-                  onChange={(members) => update("evaluatorMembers", members)}
-                  placeholder="เลือกกลุ่มผู้ประเมิน..."
-                  loading={usersLoading}
-                  error={usersError}
-                />
+                <div className="space-y-3">
+                  <GroupMemberPicker
+                    label="คณะผู้ประเมิน"
+                    groups={allGroupsForSelect}
+                    searchMembers={allMembersForSearch}
+                    selectedMembers={form.evaluatorMembers}
+                    onChange={(members) => {
+                      update("evaluatorMembers", members);
+                      setForm((prev) => {
+                        const nextSettings: EvaluationFormData["evaluatorSettings"] = {};
+                        for (const member of members) {
+                          nextSettings[member.id] = prev.evaluatorSettings[member.id] ?? {
+                            canScore: true,
+                            requiresSignature: true,
+                          };
+                        }
+                        return { ...prev, evaluatorMembers: members, evaluatorSettings: nextSettings };
+                      });
+                    }}
+                    placeholder="เลือกคณะผู้ประเมิน..."
+                    loading={usersLoading}
+                    error={usersError}
+                  />
+                  {form.evaluatorMembers.length > 0 ? (
+                    <div className="overflow-hidden rounded-lg border border-gray-200">
+                      <div className="grid grid-cols-[1fr_90px_90px] bg-gray-50 px-3 py-2 text-xs font-medium text-gray-500">
+                        <span>รายชื่อ</span><span className="text-center">ลงคะแนน</span><span className="text-center">ลงชื่อ</span>
+                      </div>
+                      {form.evaluatorMembers.map((member) => {
+                        const setting = form.evaluatorSettings[member.id] ?? { canScore: true, requiresSignature: true };
+                        return (
+                          <div key={member.id} className="grid grid-cols-[1fr_90px_90px] items-center border-t border-gray-100 px-3 py-2.5 text-sm">
+                            <span className="truncate">{member.name}</span>
+                            <input type="checkbox" checked={setting.canScore} onChange={(event) => setForm((prev) => ({ ...prev, evaluatorSettings: { ...prev.evaluatorSettings, [member.id]: { ...setting, canScore: event.target.checked } } }))} className="mx-auto h-4 w-4" />
+                            <input type="checkbox" checked={setting.requiresSignature} onChange={(event) => setForm((prev) => ({ ...prev, evaluatorSettings: { ...prev.evaluatorSettings, [member.id]: { ...setting, requiresSignature: event.target.checked } } }))} className="mx-auto h-4 w-4" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
               )}
             </div>
           </div>

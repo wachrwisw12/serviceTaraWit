@@ -1,46 +1,51 @@
 package routers
 
 import (
-	"log"
 	middlewares "tarawitApi/midleware"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/websocket/v2"
 )
 
 func SetupRoute(app *fiber.App) {
 	api := app.Group("/api")
-    
+
 	SetupAuth(api.Group("/auth"))
-	SetupEvaluationRoute(api.Group("/evaluation",middlewares.JWTMiddleware))
-	SetupUserRoute(api.Group("/user",middlewares.JWTMiddleware))
-	SetupRoleRoute(api.Group("/role",middlewares.JWTMiddleware))
-}
 
-var clients = make(map[*websocket.Conn]bool)
+	protected := func(path string) fiber.Router {
+		return api.Group(
+			path,
+			middlewares.JWTMiddleware,
+			middlewares.AuthenticatedLimiter(),
+		)
+	}
 
-func SetupWS(app *fiber.App) {
-	app.Use("/ws", func(c *fiber.Ctx) error {
-		if websocket.IsWebSocketUpgrade(c) {
-			return c.Next()
-		}
-		return fiber.ErrUpgradeRequired
-	})
-
-	app.Get("/ws", websocket.New(func(conn *websocket.Conn) {
-		clients[conn] = true
-		log.Println("client connected")
-
-		defer func() {
-			delete(clients, conn)
-			conn.Close()
-			log.Println("client disconnected")
-		}()
-
-		for {
-			if _, _, err := conn.ReadMessage(); err != nil {
-				break
-			}
-		}
-	}))
+	SetupModuleRoute(protected("/modules"))
+	evaluation := protected("/evaluation")
+	evaluation.Use(middlewares.RequireModule("evaluation"))
+	SetupEvaluationRoute(evaluation)
+	users := protected("/user")
+	users.Use(middlewares.RequireModule("users"))
+	SetupUserRoute(users)
+	roles := protected("/role")
+	roles.Use(middlewares.RequireModule("users"))
+	SetupRoleRoute(roles)
+	attendance := protected("/attendance")
+	attendance.Use(middlewares.RequireModule("attendance"))
+	SetupAttendanceRoute(attendance)
+	personnel := protected("/personnel")
+	personnel.Use(middlewares.RequireModule("personnel"))
+	SetupPersonnelRoute(personnel)
+	positions := protected("/positions")
+	positions.Use(middlewares.RequireModule("personnel"))
+	SetupPositionRoute(positions)
+	settings := protected("/settings")
+	settings.Use(middlewares.RequireModule("settings"))
+	SetupSettingRoute(settings)
+	reports := protected("/dashboard")
+	reports.Use(middlewares.RequireModule("reports"))
+	SetupDashboardRoute(reports)
+	iqa := protected("/iqa")
+	iqa.Use(middlewares.RequireModule("evaluation"))
+	SetupIQARoute(iqa)
+	SetupUploadRoute(api)
 }

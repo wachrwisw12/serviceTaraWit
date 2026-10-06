@@ -3,8 +3,10 @@ package evaluationservices
 import (
 	"context"
 	"fmt"
+	"strings"
 	evaluationModels "tarawitApi/evaluationFeature/evaluation_models"
 )
+
 func (s *EvaluationService) GetEvaluatorAssignmentDetail(
 	userId int64,
 	assignmentID int64,
@@ -33,6 +35,18 @@ func (s *EvaluationService) SubmitEvaluationAnswers(
 
 	if len(req.Answers) == 0 {
 		return nil, fmt.Errorf("ไม่พบคำตอบ")
+	}
+
+	if req.Comment != nil {
+		comment := strings.TrimSpace(*req.Comment)
+		if len([]rune(comment)) > 2000 {
+			return nil, fmt.Errorf("ข้อเสนอแนะต้องไม่เกิน 2,000 ตัวอักษร")
+		}
+		if comment == "" {
+			req.Comment = nil
+		} else {
+			req.Comment = &comment
+		}
 	}
 
 	// ป้องกัน question ซ้ำใน payload

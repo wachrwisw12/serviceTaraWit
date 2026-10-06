@@ -50,8 +50,8 @@ const TYPE_STYLES: Record<
     fillRule: "evenodd",
   },
   submission: {
-    iconBg: "bg-emerald-50",
-    iconText: "text-emerald-600",
+    iconBg: "bg-primary/10",
+    iconText: "text-primary-dark",
     icon: "M16.704 5.29a1 1 0 010 1.415l-7.5 7.5a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 111.414-1.414L8.5 12.086l6.79-6.795a1 1 0 011.414 0z",
     fillRule: "evenodd",
   },

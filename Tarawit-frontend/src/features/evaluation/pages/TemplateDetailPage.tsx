@@ -1,11 +1,19 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Pencil, Copy, Play, Pause, Trash2 } from "lucide-react";
 import type {
   TemplateDetailResponse,
   QuestionScoreResponse,
 } from "../types/template_type";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
-import { fetchTemplateById } from "../api/templateSlice";
+import useSnackbar from "../../../components/snackbar/useSnackbar";
+import {
+  fetchTemplateById,
+  deleteTemplate,
+  duplicateTemplate,
+  updateTemplateStatus,
+  fetchTemplates,
+} from "../api/templateSlice";
 
 const QUESTION_TYPE_LABEL: Record<string, string> = {
   SCALE: "ให้คะแนน (Scale)",
@@ -37,12 +45,64 @@ export default function TemplateDetailPage() {
     dispatch(fetchTemplateById(Number(templateId)));
   }, [dispatch, templateId]);
 
+  const snackbar = useSnackbar();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const template = templateDetail as TemplateDetailResponse | null;
   const totalQuestions =
     template?.sections.reduce(
       (sum, section) => sum + section.questions.length,
       0,
     ) ?? 0;
+
+  async function handleDelete() {
+    if (!template) return;
+    const res = await dispatch(deleteTemplate(template.id));
+    if (deleteTemplate.fulfilled.match(res)) {
+      snackbar.showSnackbar("ลบแม่แบบสำเร็จ", "success");
+      dispatch(fetchTemplates());
+      navigate("/evaluation/templates");
+    } else {
+      snackbar.showSnackbar(
+        (res as { payload?: string }).payload ?? "ลบไม่สำเร็จ",
+        "error",
+      );
+    }
+    setShowDeleteConfirm(false);
+  }
+
+  async function handleDuplicate() {
+    if (!template) return;
+    const res = await dispatch(duplicateTemplate(template.id));
+    if (duplicateTemplate.fulfilled.match(res)) {
+      snackbar.showSnackbar("คัดลอกแม่แบบสำเร็จ", "success");
+      dispatch(fetchTemplates());
+    } else {
+      snackbar.showSnackbar(
+        (res as { payload?: string }).payload ?? "คัดลอกไม่สำเร็จ",
+        "error",
+      );
+    }
+  }
+
+  async function handleToggleStatus() {
+    if (!template) return;
+    const newStatus = template.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    const res = await dispatch(
+      updateTemplateStatus({ id: template.id, status: newStatus }),
+    );
+    if (updateTemplateStatus.fulfilled.match(res)) {
+      snackbar.showSnackbar(
+        newStatus === "ACTIVE" ? "เปิดใช้งานแม่แบบแล้ว" : "ปิดใช้งานแม่แบบแล้ว",
+        "success",
+      );
+    } else {
+      snackbar.showSnackbar(
+        (res as { payload?: string }).payload ?? "เปลี่ยนสถานะไม่สำเร็จ",
+        "error",
+      );
+    }
+  }
 
   if (loading) {
     return (
@@ -83,16 +143,103 @@ export default function TemplateDetailPage() {
             ← กลับไปหน้ารายการ
           </button>
 
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-medium ${
-              template.status === "ACTIVE"
-                ? "bg-green-50 text-green-700"
-                : "bg-amber-50 text-amber-700"
-            }`}
-          >
-            {template.status}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                template.status === "ACTIVE"
+                  ? "bg-primary/10 text-primary-dark"
+                  : "bg-amber-50 text-amber-700"
+              }`}
+            >
+              {template.status}
+            </span>
+
+            {/* ปุ่มจัดการ */}
+            <button
+              onClick={() =>
+                navigate(`/evaluation/templates/${template.id}/edit`)
+              }
+              title="แก้ไข"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-blue-300 hover:text-blue-600"
+            >
+              <Pencil size={14} />
+              แก้ไข
+            </button>
+
+            <button
+              onClick={handleDuplicate}
+              title="ทำสำเนา"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800"
+            >
+              <Copy size={14} />
+              สำเนา
+            </button>
+
+            <button
+              onClick={handleToggleStatus}
+              title={
+                template.status === "ACTIVE"
+                  ? "ปิดใช้งาน"
+                  : "เปิดใช้งาน"
+              }
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                template.status === "ACTIVE"
+                  ? "border-amber-200 text-amber-600 hover:bg-amber-50"
+                  : "border-primary/30 text-primary hover:bg-primary/5"
+              }`}
+            >
+              {template.status === "ACTIVE" ? (
+                <>
+                  <Pause size={14} />
+                  ปิดใช้งาน
+                </>
+              ) : (
+                <>
+                  <Play size={14} />
+                  เปิดใช้งาน
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              title="ลบ"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 transition hover:border-red-300 hover:text-red-600"
+            >
+              <Trash2 size={14} />
+              ลบ
+            </button>
+          </div>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4">
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                ยืนยันการลบ
+              </h3>
+              <p className="text-sm text-slate-600 mb-6">
+                ต้องการลบแม่แบบ "{template.template_name}" ใช่หรือไม่?
+                การกระทำนี้ไม่สามารถย้อนกลับได้
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-sm font-medium text-white hover:bg-red-700"
+                >
+                  ลบ
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
@@ -122,6 +269,41 @@ export default function TemplateDetailPage() {
               </span>
             </div>
           </div>
+
+          {/* หัวฟิลด์ (Fields) */}
+          {template.fields && template.fields.length > 0 && (
+            <div className="mb-8">
+              <h2 className="font-semibold text-slate-800 mb-3">
+                ข้อมูลประกอบ
+              </h2>
+              <div className="grid gap-3 md:grid-cols-2">
+                {template.fields.map((field, fieldIndex) => (
+                  <div
+                    key={fieldIndex}
+                    className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-slate-700">
+                          {field.label}
+                        </span>
+                        {field.required && (
+                          <span className="text-xs text-red-500">*</span>
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-400">
+                        {field.field_type === "TEXT" && "ข้อความสั้น"}
+                        {field.field_type === "TEXTAREA" && "ข้อความยาว"}
+                        {field.field_type === "NUMBER" && "ตัวเลข"}
+                        {field.field_type === "DATE" && "วันที่"}
+                        {field.placeholder && ` — ${field.placeholder}`}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-8">
             {template.sections.map((section, sectionIndex) => (

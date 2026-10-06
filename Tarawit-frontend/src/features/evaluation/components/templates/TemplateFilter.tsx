@@ -1,7 +1,7 @@
 import { Plus, Search } from "lucide-react";
 
-const ACCENT = "#2fae60";
-const ACCENT_DARK = "#1f8a49";
+const ACCENT = "var(--color-primary)";
+const ACCENT_DARK = "var(--color-primary-dark)";
 
 interface TemplateFilterBarProps {
   searchValue: string;
@@ -35,7 +35,7 @@ export default function TemplateFilterBar({
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="ค้นหาแม่แบบ..."
           className="pl-10 pr-4 h-11 w-full border border-gray-200 rounded-lg text-sm outline-none transition-colors focus:ring-2"
-          style={{ ["--tw-ring-color" as string]: `${ACCENT}33` }}
+          style={{ ["--tw-ring-color" as string]: "color-mix(in srgb, var(--color-primary) 20%, transparent)" }}
           onFocus={(e) => (e.currentTarget.style.borderColor = ACCENT)}
           onBlur={(e) => (e.currentTarget.style.borderColor = "")}
         />
@@ -49,7 +49,7 @@ export default function TemplateFilterBar({
         value={typeValue}
         onChange={(e) => onTypeChange(e.target.value)}
         className="border border-gray-200 rounded-lg h-11 px-3 text-sm text-gray-700 outline-none focus:ring-2 transition-colors"
-        style={{ ["--tw-ring-color" as string]: `${ACCENT}33` }}
+        style={{ ["--tw-ring-color" as string]: "color-mix(in srgb, var(--color-primary) 20%, transparent)" }}
       >
         <option value="ALL">ทุกประเภท</option>
         <option value="TEACHER">ครู</option>
@@ -60,7 +60,7 @@ export default function TemplateFilterBar({
         value={statusValue}
         onChange={(e) => onStatusChange(e.target.value)}
         className="border border-gray-200 rounded-lg h-11 px-3 text-sm text-gray-700 outline-none focus:ring-2 transition-colors"
-        style={{ ["--tw-ring-color" as string]: `${ACCENT}33` }}
+        style={{ ["--tw-ring-color" as string]: "color-mix(in srgb, var(--color-primary) 20%, transparent)" }}
       >
         <option value="ALL">ทุกสถานะ</option>
         <option value="DRAFT">Draft</option>

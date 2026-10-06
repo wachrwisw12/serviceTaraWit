@@ -16,6 +16,16 @@ export type SystemRoleDef = {
   permissionCount: number;
   icon: ComponentType<{ color: string }>; // tailwind text/bg accent
   is_active: boolean;
+  permission_ids?: number[];
+};
+
+export type PermissionDef = {
+  id: number;
+  code: string;
+  name: string;
+  module: string;
+  description?: string;
+  is_active?: boolean;
 };
 
 export type PersonType = {

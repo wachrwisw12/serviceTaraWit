@@ -1,0 +1,17 @@
+# ── Frontend build-artifact dirs ──
+Tarawit-frontend/node_modules/
+Tarawit-frontend/dev-dist/
+
+# ── Go build artifacts & runtime dirs ──
+server/tarawit-api
+server/tmp/
+server/uploads/
+server/storage/
+server/.git/
+
+# ── OS / IDE junk ──
+**/.DS_Store
+
+# ── Storage & backups (large, never needed in images) ──
+storage/
+backups/

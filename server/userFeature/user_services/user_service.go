@@ -32,6 +32,39 @@ func (s *UserService) GetUserByIDService(
 func (s *UserService) GetRolesService() ([]usermodel.Roles, error) {
 	return s.repo.GetRolesRepo()
 }
+
+func (s *UserService) GetRolesWithPermissions() ([]usermodel.Roles, error) {
+	return s.repo.GetRolesWithPermissionsRepo()
+}
+
+func (s *UserService) GetAllPermissions() ([]usermodel.PermissionDef, error) {
+	return s.repo.GetAllPermissionsRepo()
+}
+
+func (s *UserService) UpdateRolePermissions(
+	roleID int64,
+	permissionIDs []int64,
+) error {
+	ctx := context.Background()
+	tx, err := db.DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	exists, err := s.repo.RoleExistsRepo(ctx, tx, roleID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.New("role not found")
+	}
+
+	if err := s.repo.UpdateRolePermissionsRepo(ctx, tx, roleID, permissionIDs); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
 func (s *UserService) GetPersonTypeService() ([]usermodel.PersonType, error) {
 	return s.repo.GetPersonTypeRepo()
 }
@@ -49,30 +82,30 @@ func (s *UserService) UpdateUserPermission(
 	}
 
 	defer tx.Rollback(ctx)
-exists, err := s.repo.CheckUserExists(
-	ctx,
-	tx,
-	userID,
-)
-if err != nil {
-	return err
-}
+	exists, err := s.repo.CheckUserExists(
+		ctx,
+		tx,
+		userID,
+	)
+	if err != nil {
+		return err
+	}
 
-if !exists {
-	return errors.New("user not found")
-}
-valid, err := s.repo.CheckRoleIDs(
-	ctx,
-	tx,
-	req.RoleIDs,
-)
-if err != nil {
-	return err
-}
+	if !exists {
+		return errors.New("user not found")
+	}
+	valid, err := s.repo.CheckRoleIDs(
+		ctx,
+		tx,
+		req.RoleIDs,
+	)
+	if err != nil {
+		return err
+	}
 
-if !valid {
-	return errors.New("invalid role")
-}
+	if !valid {
+		return errors.New("invalid role")
+	}
 	// 1. Update Person Type
 	if err := s.repo.UpdatePersonType(
 		ctx,

@@ -1,18 +1,19 @@
 package usermodel
 
 type UserInfo struct {
-	ID             int64         `json:"id"`
-	Prefixes       string        `json:"prefixes"`
-	Username       string        `json:"username"`
-	PasswordHash   string        `json:"-"`
-	Position       string        `json:"position"`
-	FirstName      *string       `json:"first_name,omitempty"`
-	LastName       *string       `json:"last_name,omitempty"`
-	Phone          *string       `json:"phone,omitempty"`
-	IsActive       bool          `json:"is_active"`
-	Email          *string       `json:"email,omitempty"`
-	PersonTypeID string        `json:"person_type_id"`
-	PersonTypeName string        `json:"person_type_name"`
+	ID             int64   `json:"id"`
+	Prefixes       string  `json:"prefixes"`
+	Username       string  `json:"username"`
+	PasswordHash   string  `json:"-"`
+	Position       string  `json:"position"`
+	FirstName      *string `json:"first_name,omitempty"`
+	LastName       *string `json:"last_name,omitempty"`
+	Phone          *string `json:"phone,omitempty"`
+	AvatarURL      *string `json:"avatar_url,omitempty"`
+	IsActive       bool    `json:"is_active"`
+	Email          *string `json:"email,omitempty"`
+	PersonTypeID   string  `json:"person_type_id"`
+	PersonTypeName string  `json:"person_type_name"`
 
 	Roles       []UserRole   `json:"roles"`
 	Permissions []Permission `json:"permissions"`
@@ -32,6 +33,6 @@ type Permission struct {
 }
 
 type UpdateUserRoleRequest struct {
-    PersonTypeID *int64   `json:"person_type_id"`
-    RoleIDs      []int64  `json:"role_ids"`
+	PersonTypeID *int64  `json:"person_type_id"`
+	RoleIDs      []int64 `json:"role_ids"`
 }

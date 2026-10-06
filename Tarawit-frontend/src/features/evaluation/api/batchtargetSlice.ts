@@ -11,6 +11,7 @@ export type EvaluatorStatus = {
 
 export type TargetInstanceStatus = {
   instance_id: number;
+  instance_status: "DRAFT" | "OPEN" | "CLOSED" | string;
   template_name: string;
   attachment_ids: number[];
   my_assignment_id: number | null;

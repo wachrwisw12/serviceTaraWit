@@ -1,15 +1,15 @@
 import { SvgIcon, ICONS } from "@/design-system/icons";
 
 import type { IconDefinition } from "@/design-system/icons";
-import type { TemplateType } from "../types/template_type";
+import type { TemplateType } from "../../types/template_type";
 type AccentColor = {
   main: string;
   soft: string;
 };
 
 const accent: AccentColor = {
-  main: "#2fae60",
-  soft: "#2fae601a",
+  main: "var(--color-primary)",
+  soft: "var(--color-primary-soft)",
 };
 
 export default function InstanceTypePicker({

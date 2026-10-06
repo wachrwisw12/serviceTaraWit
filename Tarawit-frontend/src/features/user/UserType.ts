@@ -5,8 +5,12 @@ export interface UserListResponse {
   first_name: string;
   last_name: string;
   position: string;
+  phone?: string | null;
   person_type_code: string;
   person_type_name: string;
+  avatar_url?: string | null;
+  prefixes?: string;
+  prefix_code?: string;
   roles: Role[];
   is_active: boolean;
 }
@@ -44,6 +48,7 @@ export interface UserDetailResponse {
 
   person_type_id: string;
   person_type_name: string;
+  avatar_url?: string | null;
   roles: Role[];
   permissions: Permission[];
   PersonType: PersonType;

@@ -13,7 +13,7 @@ interface TemplateTableProps {
   onActivate?: (item: TemplateApiResponse) => void;
 }
 
-const ACCENT = "#2fae60";
+const ACCENT = "var(--color-primary)";
 
 export default function TemplateTable({
   items = [],
@@ -175,7 +175,7 @@ export default function TemplateTable({
                     onClick={() => onActivate?.(item)}
                     title="เปิดใช้งาน"
                     disabled={item.status === "ACTIVE"}
-                    className="p-2 rounded-lg text-gray-400 hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-25"
+                    className="p-2 rounded-lg text-gray-400 hover:bg-primary/10 hover:text-primary-dark disabled:opacity-25"
                   >
                     <Play size={17} />
                   </button>

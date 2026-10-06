@@ -33,7 +33,7 @@ func loadProd() *Config {
 	// ตรวจสอบว่ามีค่าว่างหรือไม่
 
 	return &Config{
-		AppEnv:     "dev",
+		AppEnv:     "prod",
 		JWTPrivKey: privateKey,
 		JWTPubKey:  publicKey,
 	}

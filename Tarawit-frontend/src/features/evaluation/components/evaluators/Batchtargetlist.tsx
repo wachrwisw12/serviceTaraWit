@@ -43,11 +43,17 @@ export default function BatchTargetList() {
 
   // ⬇️ ใหม่: รวมรายการที่ "ฉัน" ต้องให้คะแนนจากทุกคนไว้เป็นคิวเดียว
   // ไม่ต้องไล่เปิดทีละแถวเพื่อหาว่าใครยังรอเราอยู่บ้าง
+  // ให้คะแนนได้เฉพาะรายการที่ผู้สร้างเปิดแล้ว (instance_status = OPEN)
   const pendingQueue = useMemo(
     () =>
       targets.flatMap((t) =>
         t.instances
-          .filter((i) => i.my_assignment_id && i.my_status !== "submitted")
+          .filter(
+            (i) =>
+              i.instance_status === "OPEN" &&
+              i.my_assignment_id &&
+              i.my_status !== "submitted",
+          )
           .map((i) => ({ target: t, instance: i })),
       ),
     [targets],
@@ -112,7 +118,7 @@ shadow-sm
           {pendingQueue.length > 0 && (
             <button
               onClick={() => setActiveItem(pendingQueue[0])}
-              className="rounded-lg bg-[#2fae60] px-4 py-2 text-xs font-medium text-white hover:bg-[#218a4a] whitespace-nowrap"
+              className="rounded-lg bg-primary px-4 py-2 text-xs font-medium text-white hover:bg-primary-dark whitespace-nowrap"
             >
               ให้คะแนนต่อ ({pendingQueue.length} รายการรอ)
             </button>
@@ -144,7 +150,7 @@ border-gray-200
 py-2
 pl-9
 text-sm
-focus:border-[#2fae60]
+focus:border-primary
 outline-none
 "
             />
@@ -156,7 +162,7 @@ outline-none
               type="checkbox"
               checked={onlyMine}
               onChange={(e) => setOnlyMine(e.target.checked)}
-              className="accent-[#2fae60]"
+              className="accent-primary"
             />
             แสดงเฉพาะที่ฉันต้องให้คะแนน
           </label>
@@ -244,6 +250,10 @@ text-gray-400
         targetName={activeItem?.target.name ?? ""}
         instance={activeItem?.instance ?? null}
         onSubmitted={() => goToQueueOffset(1)}
+        onPrev={() => goToQueueOffset(-1)}
+        onNext={() => goToQueueOffset(1)}
+        queueIndex={activeQueueIndex}
+        queueTotal={pendingQueue.length}
       />
     </div>
   );

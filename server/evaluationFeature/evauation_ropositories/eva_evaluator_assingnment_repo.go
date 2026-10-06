@@ -10,12 +10,10 @@ import (
 	evaluationModels "tarawitApi/evaluationFeature/evaluation_models"
 )
 
-
 func (r *EvaluationRepository) GetEvaluatorAssignmentDetail(
 	userId int64,
 	assignmentId int64,
 ) (*evaluationModels.EvaluatorAssignmentDetail, error) {
- 
 
 	query := `
 SELECT
@@ -33,6 +31,8 @@ SELECT
     ei.academic_year,
     ei.round,
     ei.show_score_to_visibility,
+    a.status,
+    a.comment,
 
     -- target
     et.id,
@@ -53,7 +53,11 @@ COALESCE(
         json_build_object(
             'user_id', eie.user_id,
             'name_snapshot', eie.name_snapshot,
-            'position_snapshot', eie.position_snapshot
+            'position_snapshot', eie.position_snapshot,
+            'can_score', eie.can_score,
+            'requires_signature', eie.requires_signature,
+            'signature_order', eie.signature_order,
+            'signature_role', eie.signature_role
         )
         ORDER BY eie.id
     )
@@ -174,69 +178,67 @@ AND a.evaluator_id = $2
 		userId,
 	)
 
-
 	var detail evaluationModels.EvaluatorAssignmentDetail
-var evaluatorJSON []byte
+	var evaluatorJSON []byte
 
 	var fieldJSON []byte
-var questionJSON []byte
-
+	var questionJSON []byte
 
 	err := row.Scan(
-    &detail.ID,
-    &detail.TemplateID,
-    &detail.TemplateName,
-    &detail.TemplateType,
-    &detail.InstanceName,
-    &detail.Status,
-    &detail.StartDate,
-    &detail.EndDate,
-    &detail.CreatedBy,
-    &detail.UpdatedAt,
-    &detail.AcademicYear,
-    &detail.Round,
-    &detail.ShowScoreToVisibility,
+		&detail.ID,
+		&detail.TemplateID,
+		&detail.TemplateName,
+		&detail.TemplateType,
+		&detail.InstanceName,
+		&detail.Status,
+		&detail.StartDate,
+		&detail.EndDate,
+		&detail.CreatedBy,
+		&detail.UpdatedAt,
+		&detail.AcademicYear,
+		&detail.Round,
+		&detail.ShowScoreToVisibility,
+		&detail.AssignmentStatus,
+		&detail.Comment,
 
-    &detail.Target.ID,
-    &detail.Target.UserID,
-    &detail.Target.Status,
-    &detail.Target.Name,
-    &detail.Target.Position,
-    &evaluatorJSON, // <-- เพิ่มตรงนี้
+		&detail.Target.ID,
+		&detail.Target.UserID,
+		&detail.Target.Status,
+		&detail.Target.Name,
+		&detail.Target.Position,
+		&evaluatorJSON, // <-- เพิ่มตรงนี้
 
-    &fieldJSON,      // fields
-    &questionJSON,   // questions
-)
-
+		&fieldJSON,    // fields
+		&questionJSON, // questions
+	)
 
 	if err != nil {
 		return nil, err
 	}
 
-if err := json.Unmarshal(
-    evaluatorJSON,
-    &detail.Evaluators,
-); err != nil {
-    return nil, err
-}
+	if err := json.Unmarshal(
+		evaluatorJSON,
+		&detail.Evaluators,
+	); err != nil {
+		return nil, err
+	}
 
 	if err := json.Unmarshal(fieldJSON, &detail.Fields); err != nil {
-    return nil, err
-}
+		return nil, err
+	}
 
-if err := json.Unmarshal(questionJSON, &detail.Questions); err != nil {
-    return nil, err
-}
+	if err := json.Unmarshal(questionJSON, &detail.Questions); err != nil {
+		return nil, err
+	}
 
 	if err != nil {
 		return nil, err
 	}
 
-
-	return &detail,nil
+	return &detail, nil
 }
 
-func (r *EvaluationRepository)  SubmitEvaluationAnswers(
+func (r *EvaluationRepository) SubmitEvaluationAnswers(
 	ctx context.Context,
 	assignmentID int64,
 	evaluatorUserID int64,
@@ -259,7 +261,7 @@ func (r *EvaluationRepository)  SubmitEvaluationAnswers(
 
 	defer func() {
 		if !committed {
-			_ = tx.Rollback(ctx)
+			_ = tx.Rollback(context.Background())
 		}
 	}()
 
@@ -267,17 +269,13 @@ func (r *EvaluationRepository)  SubmitEvaluationAnswers(
 	// 1. ตรวจ Assignment + สิทธิ์ผู้ประเมิน
 	// --------------------------------------------------
 
-	var (
-		instanceID int64
-		status     string
-	)
+	var instanceID int64
 
 	err = tx.QueryRow(
 		ctx,
 		`
 		SELECT
-			a.instance_id,
-			a.status
+			a.instance_id
 		FROM evaluation_assignments a
 		WHERE a.id = $1
 		  AND a.evaluator_id = $2
@@ -285,10 +283,7 @@ func (r *EvaluationRepository)  SubmitEvaluationAnswers(
 		`,
 		assignmentID,
 		evaluatorUserID,
-	).Scan(
-		&instanceID,
-		&status,
-	)
+	).Scan(&instanceID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -300,12 +295,6 @@ func (r *EvaluationRepository)  SubmitEvaluationAnswers(
 		return nil, fmt.Errorf(
 			"ตรวจสอบ assignment ไม่สำเร็จ: %w",
 			err,
-		)
-	}
-
-	if status == "submitted" {
-		return nil, fmt.Errorf(
-			"รายการประเมินนี้ถูกส่งคะแนนแล้ว",
 		)
 	}
 
@@ -359,7 +348,7 @@ func (r *EvaluationRepository)  SubmitEvaluationAnswers(
 	// --------------------------------------------------
 
 	for _, answer := range req.Answers {
-   
+
 		if answer.QuestionID <= 0 {
 			return nil, fmt.Errorf(
 				"question_id ไม่ถูกต้อง",
@@ -559,12 +548,14 @@ func (r *EvaluationRepository)  SubmitEvaluationAnswers(
 		UPDATE evaluation_assignments
 		SET
 			status = 'submitted',
+			comment = $3,
 			submitted_at = NOW()
 		WHERE id = $1
 		  AND evaluator_id = $2
 		`,
 		assignmentID,
 		evaluatorUserID,
+		req.Comment,
 	)
 
 	if err != nil {
@@ -593,11 +584,11 @@ func (r *EvaluationRepository)  SubmitEvaluationAnswers(
 	// --------------------------------------------------
 
 	if err := tx.Commit(ctx); err != nil {
-	return nil, fmt.Errorf(
-		"commit transaction ไม่สำเร็จ: %w",
-		err,
-	)
-}
+		return nil, fmt.Errorf(
+			"commit transaction ไม่สำเร็จ: %w",
+			err,
+		)
+	}
 
 	committed = true
 

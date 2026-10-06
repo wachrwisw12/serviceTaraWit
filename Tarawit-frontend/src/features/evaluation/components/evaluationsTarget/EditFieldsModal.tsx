@@ -32,7 +32,7 @@ export default function EditFieldsModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-50 text-green-600">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary-dark">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
@@ -102,7 +102,7 @@ export default function EditFieldsModal({
             type="button"
             disabled={loading}
             onClick={() => onSavefield(values)}
-            className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading && (
               <svg

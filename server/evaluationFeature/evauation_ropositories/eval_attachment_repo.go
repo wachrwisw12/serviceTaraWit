@@ -207,3 +207,31 @@ func (r *EvaluationRepository) DeleteAttachment(
 	return err
 }
 
+// IsUserEvaluatorForInstance ตรวจว่า user เป็นผู้ประเมินใน instance นี้หรือไม่
+func (r *EvaluationRepository) IsUserEvaluatorForInstance(
+	instanceID int,
+	userID int,
+) (bool, error) {
+
+	query := `
+		SELECT EXISTS(
+			SELECT 1 FROM evaluation_instance_evaluators
+			WHERE instance_id = $1 AND user_id = $2
+		)
+	`
+
+	var exists bool
+	err := db.DB.QueryRow(
+		context.Background(),
+		query,
+		instanceID,
+		userID,
+	).Scan(&exists)
+
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+

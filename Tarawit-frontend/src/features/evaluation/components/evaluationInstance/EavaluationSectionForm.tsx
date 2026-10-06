@@ -13,7 +13,13 @@ interface EvaluationSectionProps {
   canUpload?: boolean;
   // ถ้าไม่ส่ง จะใช้ค่าจาก template_type
   showAttachments?: boolean;
+  /** ซ่อนหัวรายละเอียดซ้ำ เมื่อ parent มีหัวข้อมูลของตัวเองแล้ว */
+  showHeader?: boolean;
   loading?: boolean;
+  /** คะแนนเฉลี่ยจริง (กรณี answers ถูกปัดเป็นวงกลม) */
+  averageOverride?: number | null;
+  comment?: string;
+  onCommentChange?: (comment: string) => void;
   onAnswerChange?: (questionId: number, score: number) => void;
   onSave?: (values: Record<number, string>) => Promise<void>;
 }
@@ -25,7 +31,11 @@ export default function EvaluationSectionForm({
   canEditFields = false,
   canUpload = false,
   showAttachments,
+  showHeader,
   loading = false,
+  averageOverride,
+  comment = "",
+  onCommentChange,
   onSave,
   onAnswerChange,
 }: EvaluationSectionProps) {
@@ -37,6 +47,7 @@ export default function EvaluationSectionForm({
 
   const config = getTemplateTypeConfig(detail.template_type);
   const shouldShowAttachments = showAttachments ?? config.showAttachments;
+  const shouldShowHeader = showHeader ?? config.showHeader;
 
   const shouldAllowUpload = config.canUploadAttachments && (canUpload ?? false);
 
@@ -44,7 +55,7 @@ export default function EvaluationSectionForm({
     config.canScore && mode === "evaluate" ? "evaluate" : "view";
   return (
     <>
-      {config.showHeader && (
+      {shouldShowHeader && (
         <EvaluationHeader
           detail={detail}
           canEditFields={canEditFields}
@@ -65,6 +76,9 @@ export default function EvaluationSectionForm({
         questions={detail.questions}
         mode={scoreMode}
         answers={answers}
+        averageOverride={averageOverride}
+        comment={comment}
+        onCommentChange={scoreMode === "evaluate" ? onCommentChange : undefined}
         onChange={scoreMode === "evaluate" ? onAnswerChange : undefined}
       />
     </>

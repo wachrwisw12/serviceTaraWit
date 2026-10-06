@@ -55,7 +55,7 @@ export const fetchMyEvaluationTasks = createAsyncThunk(
     try {
       const response = await axios.get("/evaluation/my-tasks");
 
-      return response.data.data as MyEvaluationTask[];
+      return (response.data.data ?? []) as MyEvaluationTask[];
     } catch (error: unknown) {
       return rejectWithValue(
         (error as { response?: { data?: { message?: string } } }).response?.data
@@ -73,7 +73,7 @@ export const fetchAllEvaluationTasks = createAsyncThunk(
     try {
       const response = await axios.get("/evaluation/tasks");
 
-      return response.data.data as MyEvaluationTask[];
+      return (response.data.data ?? []) as MyEvaluationTask[];
     } catch (error: unknown) {
       return rejectWithValue(
         (error as { response?: { data?: { message?: string } } }).response?.data

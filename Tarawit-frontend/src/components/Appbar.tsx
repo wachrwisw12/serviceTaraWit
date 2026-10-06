@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { logout } from "../features/auth/authSlice";
+import { logoutThunk } from "../features/auth/authSlice";
 import { pages } from "../constants/menu.config";
 import { filterPagesByPermission } from "../utils/menu";
-import logo from "../assets/images/logo.png";
+import { useSystemName } from "../features/setting/hooks/useSystemName";
+import logo from "../assets/images/logo_tara.webp";
+import UserAvatar from "../features/user/components/UserAvatar";
 
 type ResponsiveAppBarProps = {
   /** เรียกเมื่อกดปุ่มเมนูมือถือ ถ้าไม่ส่งมา จะ fallback ไปใช้ dropdown ภายในตัวมันเอง */
@@ -20,6 +22,7 @@ export default function ResponsiveAppBar({
   const from = location.state?.from?.pathname || "/";
 
   const { user, status } = useAppSelector((s) => s.auth);
+  const { fullName } = useSystemName();
   const visiblePages = filterPagesByPermission(pages, user?.permissions ?? []);
 
   const [navOpen, setNavOpen] = useState(false);
@@ -51,7 +54,7 @@ export default function ResponsiveAppBar({
 
   const handleLogout = async () => {
     try {
-      await dispatch(logout());
+      await dispatch(logoutThunk());
       navigate(from, { replace: true });
     } catch {
       // error ถูกจัดการใน slice แล้ว
@@ -69,20 +72,20 @@ export default function ResponsiveAppBar({
   return (
     <header className="fixed top-0 left-0 w-full z-50">
       {/* แถบ accent บนสุด */}
-      <div className="h-1.5 bg-[#68A59F]" />
+      <div className="h-1.5 bg-primary" />
 
       <div className="bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-[1400px] mx-auto px-4 xl:px-6">
           <div className="h-16 flex items-center gap-4">
-            {/* โลโก้ — แสดงเฉพาะ ≥1280px (จุดเดียวกับที่ Sidebar dock ถาวร) */}
-            <Link to="/" className="hidden xl:flex items-center gap-2 shrink-0">
-              <img src={logo} alt="Logo" className="h-8 w-auto" />
-              <span className="text-slate-800 font-semibold text-sm leading-tight">
-                ระบบนิเทศภายในสถานศึกษา
-                <br />
-                <span className="font-normal text-slate-500 text-xs">
-                  โรงเรียนท่าแร่วิทยา
-                </span>
+            {/* โลโก้ — ตราแสดงทุกขนาดจอ ข้อความแสดงเฉพาะ ≥1280px */}
+            <Link to="/" className="flex items-center gap-2 shrink-0">
+              <img
+                src={logo}
+                alt="ตราโรงเรียนท่าแร่วิทยา"
+                className="h-9 w-9 xl:h-10 xl:w-10 rounded-full object-cover ring-1 ring-gray-200 shrink-0"
+              />
+              <span className="hidden xl:block text-slate-800 font-semibold text-sm leading-tight">
+                {fullName}
               </span>
             </Link>
 
@@ -121,8 +124,8 @@ export default function ResponsiveAppBar({
               )}
             </div>
 
-            {/* ค้นหา */}
-            <div className="flex-1 max-w-md">
+            {/* ค้นหา — ซ่อนบนจอแคบมาก <400px เพื่อให้แถบโปร่ง */}
+            <div className="flex-1 max-w-md min-[400px]:block hidden">
               <div className="relative">
                 <input
                   type="text"
@@ -130,7 +133,7 @@ export default function ResponsiveAppBar({
                   onChange={(e) => setSearchValue(e.target.value)}
                   placeholder="Search here..."
                   className="w-full h-10 pl-3.5 pr-10 rounded-md bg-slate-50 border border-slate-200 text-sm text-slate-700
-                             placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#68A59F]/30 focus:border-[#68A59F]"
+                             placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
                 <svg
                   width="17"
@@ -252,7 +255,7 @@ export default function ResponsiveAppBar({
                       strokeLinecap="round"
                     />
                   </svg>
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-500" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary" />
                 </button>
 
                 <button
@@ -347,9 +350,14 @@ export default function ResponsiveAppBar({
                   onClick={() => setUserMenuOpen((v) => !v)}
                   className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-semibold">
-                    {user?.first_name?.charAt(0) ?? "M"}
-                  </div>
+                  <UserAvatar
+                    avatarUrl={user?.avatar_url}
+                    prefixCode={user?.prefix_code}
+                    prefixes={user?.prefixes}
+                    firstName={user?.first_name}
+                    className="h-9 w-9 text-sm shrink-0"
+                    alt={user?.first_name || "ผู้ใช้"}
+                  />
                   <span className="hidden xl:block text-sm font-medium text-slate-700">
                     {user?.first_name || "ไม่ระบุชื่อ"}
                   </span>
